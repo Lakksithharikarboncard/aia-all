@@ -1,27 +1,33 @@
 import "server-only";
 import { Polar } from "@polar-sh/sdk";
 
-const missing: string[] = [];
-const getEnv = (key: string): string => {
-  const val = process.env[key];
-  if (!val) missing.push(key);
-  return val ?? "";
-};
+let polarClient: Polar | null = null;
+let polarOrgId: string | null = null;
+let polarServer: "sandbox" | "production" | null = null;
 
-const token = getEnv("POLAR_ACCESS_TOKEN");
-const orgId = getEnv("POLAR_ORG_ID");
-const server = getEnv("POLAR_SERVER") as "sandbox" | "production";
+export function getPolar(): Polar | null {
+  if (polarClient) return polarClient;
 
-if (missing.length > 0) {
-  throw new Error(
-    `Missing Polar env vars: ${missing.join(", ")}. Add them to .env.local`
-  );
+  const token = process.env.POLAR_ACCESS_TOKEN;
+  const orgId = process.env.POLAR_ORG_ID;
+  const server = process.env.POLAR_SERVER as "sandbox" | "production" | undefined;
+
+  if (!token || !orgId || !server) {
+    return null;
+  }
+
+  polarOrgId = orgId;
+  polarServer = server;
+  polarClient = new Polar({ accessToken: token, server });
+  return polarClient;
 }
 
-export const polar = new Polar({
-  accessToken: token,
-  server,
-});
+export function getPolarOrgId(): string | null {
+  if (!polarOrgId) getPolar();
+  return polarOrgId;
+}
 
-export const POLAR_ORG_ID = orgId;
-export const POLAR_SERVER = server;
+export function getPolarServer(): "sandbox" | "production" | null {
+  if (!polarServer) getPolar();
+  return polarServer;
+}

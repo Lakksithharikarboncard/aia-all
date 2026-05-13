@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { polar } from "@/lib/polar/client";
+import { getPolar } from "@/lib/polar/client";
 import {
   getCustomer,
   saveCustomer,
@@ -7,6 +7,14 @@ import {
 } from "@/lib/billing/server-store";
 
 export async function POST(request: Request) {
+  const polar = getPolar();
+  if (!polar) {
+    return NextResponse.json(
+      { error: "Billing not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { customerAccountId, planMappingId } = body;
@@ -28,7 +36,6 @@ export async function POST(request: Request) {
       } as Record<string, string | number | boolean>,
     });
 
-    // Only flip to payment_pending if draft or trial
     if (customer.status === "draft" || customer.status === "trial") {
       const updated = { ...customer, status: "payment_pending" as const };
       saveCustomer(updated);
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
       entityType: "customer",
       entityId: customerAccountId,
       newValue: checkout.url,
-      reason: "Polar checkout link generated",
+      reason: "Checkout link generated",
     });
 
     return NextResponse.json({ url: checkout.url, id: checkout.id });

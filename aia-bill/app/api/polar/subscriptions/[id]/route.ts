@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import { polar } from "@/lib/polar/client";
+import { getPolar } from "@/lib/polar/client";
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const polar = getPolar();
+  if (!polar) {
+    return NextResponse.json(
+      { error: "Billing not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const { id } = await params;
 

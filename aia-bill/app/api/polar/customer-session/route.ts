@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
-import { polar } from "@/lib/polar/client";
+import { getPolar } from "@/lib/polar/client";
 
 export async function POST(request: Request) {
+  const polar = getPolar();
+  if (!polar) {
+    return NextResponse.json(
+      { error: "Billing not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { customerAccountId } = body;

@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { polar, POLAR_ORG_ID } from "@/lib/polar/client";
+import { getPolar, getPolarOrgId } from "@/lib/polar/client";
 import { saveCustomer, addAuditEntry } from "@/lib/billing/server-store";
 
 export async function POST(request: Request) {
+  const polar = getPolar();
+  const orgId = getPolarOrgId();
+  if (!polar || !orgId) {
+    return NextResponse.json(
+      { error: "Billing not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { customerAccountId, name, email } = body;
@@ -11,7 +20,7 @@ export async function POST(request: Request) {
       name: name ?? undefined,
       email: email ?? undefined,
       externalId: customerAccountId,
-      organizationId: POLAR_ORG_ID,
+      organizationId: orgId,
     });
 
     addAuditEntry({
@@ -20,14 +29,14 @@ export async function POST(request: Request) {
       entityType: "customer",
       entityId: customerAccountId,
       newValue: polarCustomer.id,
-      reason: `Polar customer created: ${polarCustomer.id}`,
+      reason: `Customer created in billing software: ${polarCustomer.id}`,
     });
 
     return NextResponse.json({ polarCustomerId: polarCustomer.id });
   } catch (error) {
     console.error("POST /api/polar/customers error:", error);
     return NextResponse.json(
-      { error: "Failed to create Polar customer" },
+      { error: "Failed to create customer in billing software" },
       { status: 500 }
     );
   }
