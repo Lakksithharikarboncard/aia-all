@@ -11,10 +11,15 @@ const CROF_API_KEY = process.env.CROF_API_KEY || '';
 const MODEL = process.env.MODEL || 'kimi-k2.5-lightning';
 const CROF_BASE_URL = process.env.CROF_BASE_URL || 'https://crof.ai/v1';
 
-const client = new OpenAI({
-  apiKey: CROF_API_KEY,
-  baseURL: CROF_BASE_URL,
-});
+let client = null;
+if (CROF_API_KEY) {
+  client = new OpenAI({
+    apiKey: CROF_API_KEY,
+    baseURL: CROF_BASE_URL,
+  });
+} else {
+  console.warn('CROF_API_KEY not set. AI generation will be unavailable.');
+}
 
 // --- Rate limit configuration (Gemini 3.1 Flash Lite) ---
 const MAX_RPM = 15;        // Requests per minute
@@ -633,6 +638,9 @@ async function processQueue() {
 }
 
 async function callGeminiRaw(prompt) {
+  if (!client) {
+    throw new Error('AI client not configured. Set CROF_API_KEY environment variable.');
+  }
   try {
     const response = await client.chat.completions.create({
       model: MODEL,
@@ -830,9 +838,13 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('Serving on http://0.0.0.0:' + PORT);
-});
+// Vercel exports the server as a serverless function
+// In local/dev mode, listen on a port directly
+if (!process.env.VERCEL) {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('Serving on http://0.0.0.0:' + PORT);
+  });
+}
 
 process.on('SIGHUP', () => {}); // Ignore SIGHUP
 
@@ -843,4 +855,7 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason) => {
   console.error('UNHANDLED REJECTION:', reason);
+});
+
+module.exports = server;
 });
