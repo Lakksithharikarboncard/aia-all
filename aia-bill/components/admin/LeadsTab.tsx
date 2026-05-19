@@ -62,7 +62,7 @@ export function LeadsTab({ leads, onRefresh, onOpenCalculator, onConvertToCustom
       billsPerMonth: selected.expectedBills,
       invoicesPerMonth: selected.expectedInvoices,
       statementsPerMonth: selected.expectedStatements,
-      accountingSoftware: selected.accountingSoftware,
+      accountingSoftware: [selected.accountingSoftware],
       gstNeeded: selected.requestedModules.includes("gst_reconciliation"),
       requiredModules: selected.requestedModules,
       billingFrequency: "monthly",
