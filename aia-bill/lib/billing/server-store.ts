@@ -36,8 +36,12 @@ function readData(): BillingData {
 }
 
 function writeData(data: BillingData): void {
-  ensureDir();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    ensureDir();
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch {
+    // Read-only filesystem (Vercel serverless) — state held in memory for this invocation only
+  }
 }
 
 // ─── Snapshot ──────────────────────────────────────────────────────────

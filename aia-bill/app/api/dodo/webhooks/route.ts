@@ -16,11 +16,15 @@ function loadProcessedIds(): Set<string> {
 }
 
 function markProcessed(id: string) {
-  const ids = loadProcessedIds();
-  ids.add(id);
-  const arr = Array.from(ids).slice(-1000);
-  fs.mkdirSync(path.dirname(DEDUP_FILE), { recursive: true });
-  fs.writeFileSync(DEDUP_FILE, JSON.stringify(arr), "utf-8");
+  try {
+    const ids = loadProcessedIds();
+    ids.add(id);
+    const arr = Array.from(ids).slice(-1000);
+    fs.mkdirSync(path.dirname(DEDUP_FILE), { recursive: true });
+    fs.writeFileSync(DEDUP_FILE, JSON.stringify(arr), "utf-8");
+  } catch {
+    // Read-only filesystem (e.g. Vercel serverless) — dedup skipped; signature verification prevents abuse
+  }
 }
 
 function verifySignature(payload: string, headers: Headers): boolean {

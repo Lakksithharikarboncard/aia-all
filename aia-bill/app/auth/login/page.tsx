@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { generateOTP } from "@/lib/auth/session";
+import { generateOTP, createOTPToken } from "@/lib/auth/session";
+import { cookies } from "next/headers";
 
 const LOGO = "https://cdn.prod.website-files.com/67ed19ac5d8a1253defd2450/690089a8f61795ffd3233552_67f8c9f1c2388ba1fc177bcb_LOGO%20(NO%20BG)-01%201.svg";
+const OTP_COOKIE = "korefi_otp";
 
 async function sendOtp(formData: FormData) {
   "use server";
@@ -10,7 +12,10 @@ async function sendOtp(formData: FormData) {
     redirect(`/auth/login?error=domain`);
   }
   const otp = generateOTP(email);
-  console.log(`[AUTH] OTP for ${email}: ${otp}`);
+  const token = createOTPToken(email, otp);
+  // Store signed OTP in a cookie so verify page can validate without file I/O
+  const cookieStore = await cookies();
+  cookieStore.set(OTP_COOKIE, token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 600 });
   redirect(`/auth/verify?email=${encodeURIComponent(email)}&_dev=${otp}`);
 }
 

@@ -1,92 +1,85 @@
 import "server-only";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
 
-const DATA_DIR = path.resolve(process.cwd(), ".data");
-const OTP_FILE = path.join(DATA_DIR, "otps.json");
-const SESSION_FILE = path.join(DATA_DIR, "sessions.json");
 const SESSION_COOKIE = "korefi_session";
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-function ensureDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+function secret(): string {
+  const s = process.env.AUTH_SECRET ?? process.env.DODO_PAYMENTS_API_KEY ?? "dev-secret-change-me";
+  return s.slice(0, 32).padEnd(32, "x");
 }
 
-// ─── OTP ─────────────────────────────────────────────────────────────
-
-type OTPRecord = { otp: string; email: string; expiresAt: number };
-
-function readOTPs(): Record<string, OTPRecord> {
-  ensureDir();
-  try { return JSON.parse(fs.readFileSync(OTP_FILE, "utf-8")); } catch { return {}; }
+function hmac(data: string): string {
+  return crypto.createHmac("sha256", secret()).update(data).digest("hex");
 }
 
-function writeOTPs(data: Record<string, OTPRecord>) {
-  ensureDir();
-  fs.writeFileSync(OTP_FILE, JSON.stringify(data), "utf-8");
-}
+// ─── OTP — stateless HMAC (no file storage) ──────────────────────────
+// OTP token format: base64(email:otp:expiresAt):hmac
+// No server storage needed — verified by signature on submit.
 
 export function generateOTP(email: string): string {
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const records = readOTPs();
-  records[email] = { otp, email, expiresAt: Date.now() + OTP_TTL_MS };
-  writeOTPs(records);
+  console.log(`[AUTH] OTP for ${email}: ${otp}`);
   return otp;
 }
 
-export function verifyOTP(email: string, otp: string): boolean {
-  const records = readOTPs();
-  const record = records[email];
-  if (!record) return false;
-  if (Date.now() > record.expiresAt) { delete records[email]; writeOTPs(records); return false; }
-  if (record.otp !== otp.trim()) return false;
-  delete records[email];
-  writeOTPs(records);
-  return true;
+// We store the token in the URL (_dev param) for dev mode, but for
+// stateless verification we need to store otp+expiry server-side.
+// On serverless we use a signed cookie approach: store otp+email+expiry
+// as a signed token in a short-lived cookie set during send-otp.
+
+export function createOTPToken(email: string, otp: string): string {
+  const expiresAt = Date.now() + OTP_TTL_MS;
+  const payload = `${email}:${otp}:${expiresAt}`;
+  const sig = hmac(payload);
+  return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
-// ─── Session ──────────────────────────────────────────────────────────
-
-type SessionRecord = { email: string; expiresAt: number };
-
-function readSessions(): Record<string, SessionRecord> {
-  ensureDir();
-  try { return JSON.parse(fs.readFileSync(SESSION_FILE, "utf-8")); } catch { return {}; }
+export function verifyOTP(email: string, otp: string, token: string): boolean {
+  try {
+    const [b64, sig] = token.split(".");
+    if (!b64 || !sig) return false;
+    const payload = Buffer.from(b64, "base64url").toString();
+    if (hmac(payload) !== sig) return false;
+    const [storedEmail, storedOtp, expiresAtStr] = payload.split(":");
+    if (storedEmail !== email.trim().toLowerCase()) return false;
+    if (storedOtp !== otp.trim()) return false;
+    if (Date.now() > Number(expiresAtStr)) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-function writeSessions(data: Record<string, SessionRecord>) {
-  ensureDir();
-  fs.writeFileSync(SESSION_FILE, JSON.stringify(data), "utf-8");
-}
+// ─── Session — signed cookie token (no file storage) ─────────────────
+// Session token format: base64(email:expiresAt):hmac
 
 export function createSession(email: string): string {
-  const token = crypto.randomBytes(32).toString("hex");
-  const sessions = readSessions();
-  // Prune expired sessions
-  const now = Date.now();
-  for (const [k, v] of Object.entries(sessions)) {
-    if (v.expiresAt < now) delete sessions[k];
-  }
-  sessions[token] = { email, expiresAt: now + SESSION_TTL_MS };
-  writeSessions(sessions);
-  return token;
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  const payload = `${email}:${expiresAt}`;
+  const sig = hmac(payload);
+  return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
-export function getSession(token: string | undefined): SessionRecord | null {
+export function getSession(token: string | undefined): { email: string; expiresAt: number } | null {
   if (!token) return null;
-  const sessions = readSessions();
-  const session = sessions[token];
-  if (!session) return null;
-  if (Date.now() > session.expiresAt) { delete sessions[token]; writeSessions(sessions); return null; }
-  return session;
+  try {
+    const [b64, sig] = token.split(".");
+    if (!b64 || !sig) return null;
+    const payload = Buffer.from(b64, "base64url").toString();
+    if (hmac(payload) !== sig) return null;
+    const [email, expiresAtStr] = payload.split(":");
+    const expiresAt = Number(expiresAtStr);
+    if (Date.now() > expiresAt) return null;
+    return { email, expiresAt };
+  } catch {
+    return null;
+  }
 }
 
-export function deleteSession(token: string) {
-  const sessions = readSessions();
-  delete sessions[token];
-  writeSessions(sessions);
+export function deleteSession(_token: string) {
+  // Stateless — nothing to delete server-side; caller clears the cookie
 }
 
 export { SESSION_COOKIE };

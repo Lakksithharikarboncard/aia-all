@@ -4,17 +4,21 @@ import { cookies } from "next/headers";
 
 const LOGO = "https://cdn.prod.website-files.com/67ed19ac5d8a1253defd2450/690089a8f61795ffd3233552_67f8c9f1c2388ba1fc177bcb_LOGO%20(NO%20BG)-01%201.svg";
 
+const OTP_COOKIE = "korefi_otp";
+
 async function verifyOtp(formData: FormData) {
   "use server";
   const email = (formData.get("email") as string ?? "").trim().toLowerCase();
   const otp = (formData.get("otp") as string ?? "").trim();
 
-  if (!verifyOTP(email, otp)) {
+  const cookieStore = await cookies();
+  const otpToken = cookieStore.get(OTP_COOKIE)?.value ?? "";
+
+  if (!verifyOTP(email, otp, otpToken)) {
     redirect(`/auth/verify?email=${encodeURIComponent(email)}&error=invalid`);
   }
 
   const token = createSession(email);
-  const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
