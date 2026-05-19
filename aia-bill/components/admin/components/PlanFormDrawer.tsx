@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Switch } from "@base-ui/react/switch";
 import { cn } from "@/lib/utils";
-import { MODULES, savePlanMapping, addAuditEntry } from "@/lib/billing";
+import { savePlanMapping, addAuditEntry, MODULES } from "@/lib/billing";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -26,11 +26,13 @@ interface PlanFormDrawerProps {
   editPlan?: PlanMapping | null;
   onClose: () => void;
   onSaved: (mapping: PlanMapping) => void;
+  onToast?: (msg: string, type: "success" | "error") => void;
 }
 
-export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDrawerProps) {
+export function PlanFormDrawer({ open, editPlan, onClose, onSaved, onToast }: PlanFormDrawerProps) {
   const [form, setForm] = React.useState(BLANK_FORM);
   const [errors, setErrors] = React.useState<Partial<Record<string, string>>>({});
+  const [syncing, setSyncing] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -62,15 +64,15 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
+    setSyncing(true);
     const now = Date.now();
     const mapping: PlanMapping = {
       id: editPlan?.id ?? `plan_${now}`,
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      polarProductId: editPlan?.polarProductId ?? `prod_${now}`,
-      polarPriceId: editPlan?.polarPriceId ?? `price_${now}`,
+      dodoProductId: editPlan?.dodoProductId,
       amount: Number(form.amount),
       billingFrequency: form.billingFrequency,
       modulesUnlocked: form.modulesUnlocked,
@@ -78,8 +80,38 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
     };
     savePlanMapping(mapping);
     addAuditEntry({ actor: "CS User", action: editPlan ? "plan_mapping_updated" : "plan_mapping_created", entityType: "plan_mapping", entityId: mapping.id, reason: `Plan ${editPlan ? "updated" : "created"}: ${mapping.name}` });
+
+    // Sync to Dodo only when there's no existing product (creates are one-time)
+    let finalMapping = mapping;
+    if (!mapping.dodoProductId) {
+      try {
+        const res = await fetch("/api/dodo/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planMappingId: mapping.id,
+            name: mapping.name,
+            description: mapping.description,
+            amount: mapping.amount,
+            billingFrequency: mapping.billingFrequency,
+          }),
+        });
+        if (res.ok) {
+          const { productId } = await res.json();
+          finalMapping = { ...mapping, dodoProductId: productId };
+          savePlanMapping(finalMapping);
+          onToast?.("Plan saved and synced to Dodo", "success");
+        } else {
+          onToast?.("Plan saved locally — Dodo sync failed. Retry from Plans list.", "error");
+        }
+      } catch {
+        onToast?.("Plan saved locally — Dodo sync failed. Retry from Plans list.", "error");
+      }
+    }
+
+    setSyncing(false);
     setForm(BLANK_FORM);
-    onSaved(mapping);
+    onSaved(finalMapping);
   };
 
   return (
@@ -87,7 +119,7 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>{editPlan ? "Edit" : "Add"} Plan</DrawerTitle>
-          <DrawerDescription>Configure package linking Polar to AIA modules</DrawerDescription>
+          <DrawerDescription>Configure package — will be created as a product in Dodo Payments</DrawerDescription>
         </DrawerHeader>
         <div className="no-scrollbar overflow-y-auto px-6 space-y-5 py-4">
           <FieldInput label="Plan Name" required value={form.name} onChange={(v) => setF("name", v)} error={errors.name} placeholder="Growth Monthly" />
@@ -107,10 +139,10 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
           <div>
             <label className="block text-sm font-medium text-text-heading mb-2">Modules <span className="text-status-error">*</span></label>
             <div className="flex flex-wrap gap-2">
-              {["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation", "reporting", "tally_zoho"].map((mid) => {
-                const selected = form.modulesUnlocked.includes(mid as ModuleId);
+              {MODULES.map((m) => {
+                const selected = form.modulesUnlocked.includes(m.id);
                 return (
-                  <button key={mid} type="button" onClick={() => toggleModule(mid as ModuleId)}
+                  <button key={m.id} type="button" onClick={() => toggleModule(m.id)}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                       selected
@@ -118,7 +150,7 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
                         : "bg-white text-text-secondary border-border-default hover:border-border-strong hover:bg-surface-hover"
                     )}
                   >
-                    {mid.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {m.name}
                   </button>
                 );
               })}
@@ -134,7 +166,7 @@ export function PlanFormDrawer({ open, editPlan, onClose, onSaved }: PlanFormDra
           </label>
         </div>
         <DrawerFooter>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave} disabled={syncing}>{syncing ? "Syncing…" : "Save"}</Button>
           <DrawerClose asChild>
             <Button variant="outline">Cancel</Button>
           </DrawerClose>

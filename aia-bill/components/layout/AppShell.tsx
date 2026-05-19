@@ -8,6 +8,8 @@ import {
   Folder,
   PanelLeftClose,
   PanelLeft,
+  LogOut,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +54,20 @@ interface AppShellProps {
 
 export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {
   const [collapsed, setCollapsed] = React.useState(false);
+  const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  React.useEffect(() => {
+    if (!userMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [userMenuOpen]);
 
   return (
     <div className="flex flex-col min-h-screen bg-surface-bg">
@@ -175,27 +191,55 @@ export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {
           </nav>
 
           {/* Footer — user profile */}
-          <div className="border-t border-border-default px-3 py-3 shrink-0">
+          <div className="border-t border-border-default px-3 py-3 shrink-0 relative" ref={userMenuRef}>
+            {/* Popup menu — renders above the button */}
+            {userMenuOpen && (
+              <div className="absolute bottom-full left-3 right-3 mb-1 bg-white border border-border-default rounded-[6px] shadow-lg overflow-hidden z-50">
+                {!collapsed && (
+                  <div className="px-3 py-2.5 border-b border-border-divider">
+                    <p className="text-xs font-medium text-text-heading truncate">Joe Root</p>
+                    <p className="text-[11px] text-text-disabled truncate">Growth Manager</p>
+                  </div>
+                )}
+                <form action="/api/auth/logout" method="POST">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-status-error hover:bg-[#fff0f0] transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5 shrink-0" />
+                    <span>Sign out</span>
+                  </button>
+                </form>
+              </div>
+            )}
+
             <button
               type="button"
+              onClick={() => setUserMenuOpen((v) => !v)}
               className={cn(
                 "flex items-center gap-2.5 w-full rounded-[3px] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:bg-surface-hover",
-                collapsed ? "justify-center p-1" : "p-1.5 text-left"
+                collapsed ? "justify-center p-1" : "p-1.5 text-left",
+                userMenuOpen && "bg-surface-selected"
               )}
-              aria-label="Joe Root, Growth Manager"
+              aria-label="User menu"
+              aria-expanded={userMenuOpen}
             >
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-action-primary text-text-inverted text-xs font-semibold shrink-0">
                 JR
               </span>
               {!collapsed && (
-                <div className="min-w-0 flex-1 leading-tight">
-                  <p className="text-sm font-medium text-text-heading truncate">
-                    Joe Root
-                  </p>
-                  <p className="text-[11px] text-text-secondary truncate">
-                    Growth Manager
-                  </p>
-                </div>
+                <>
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p className="text-sm font-medium text-text-heading truncate">Joe Root</p>
+                    <p className="text-[11px] text-text-secondary truncate">Growth Manager</p>
+                  </div>
+                  <ChevronUp
+                    className={cn(
+                      "w-3.5 h-3.5 text-text-disabled shrink-0 transition-transform duration-150",
+                      !userMenuOpen && "rotate-180"
+                    )}
+                  />
+                </>
               )}
             </button>
           </div>

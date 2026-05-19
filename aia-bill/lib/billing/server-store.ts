@@ -80,6 +80,10 @@ export function loadPlanMappings(): PlanMapping[] {
   return readData().planMappings;
 }
 
+export function getPlanMapping(id: string): PlanMapping | undefined {
+  return readData().planMappings.find((m) => m.id === id);
+}
+
 export function savePlanMapping(mapping: PlanMapping): void {
   const data = readData();
   const idx = data.planMappings.findIndex((m) => m.id === mapping.id);

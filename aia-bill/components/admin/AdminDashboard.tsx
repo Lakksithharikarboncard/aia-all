@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  loadCustomers, loadPlanMappings,
+  loadCustomers, loadPlanMappings, loadLeads, loadUpgradeRequests,
   loadAuditLog, initializeDemoData,
 } from "@/lib/billing";
 import type { CustomerAccount, PlanMapping, AuditEntry } from "@/lib/billing";
@@ -30,6 +30,19 @@ export function AdminDashboard({ tab, onTabChange }: AdminDashboardProps) {
     initializeDemoData();
     setIsClient(true);
     refresh();
+    // Push localStorage → billing.json so server-side routes (webhooks, portal) can find customers
+    const snapshot = {
+      customers: loadCustomers(),
+      leads: loadLeads(),
+      planMappings: loadPlanMappings(),
+      upgradeRequests: loadUpgradeRequests(),
+      auditLog: [],
+    };
+    fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(snapshot),
+    }).catch(() => {/* non-critical */});
   }, []);
 
   const refresh = React.useCallback(() => {

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Switch } from "@base-ui/react/switch";
-import { Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODULES, loadCustomers } from "@/lib/billing";
 import { Header } from "@/components/mds/Header";
@@ -32,11 +32,42 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
   const [showForm, setShowForm] = React.useState(false);
   const [editPlan, setEditPlan] = React.useState<PlanMapping | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<PlanMapping | null>(null);
+  const [syncingId, setSyncingId] = React.useState<string | null>(null);
 
   const [search, setSearch] = React.useState("");
   const [sortKey, setSortKey] = React.useState<string | undefined>("name");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
   const [page, setPage] = React.useState(1);
+
+  const syncToDodo = async (plan: PlanMapping) => {
+    setSyncingId(plan.id);
+    try {
+      const res = await fetch("/api/dodo/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planMappingId: plan.id,
+          name: plan.name,
+          description: plan.description,
+          amount: plan.amount,
+          billingFrequency: plan.billingFrequency,
+        }),
+      });
+      if (res.ok) {
+        const { productId } = await res.json();
+        savePlanMapping({ ...plan, dodoProductId: productId });
+        addToast(`"${plan.name}" synced to Dodo`, "success");
+        onRefresh();
+      } else {
+        const data = await res.json();
+        addToast(data.error ?? "Dodo sync failed", "error");
+      }
+    } catch {
+      addToast("Dodo sync failed", "error");
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -44,7 +75,7 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
       if (!q) return true;
       return (
         m.name.toLowerCase().includes(q) ||
-        m.polarPriceId.toLowerCase().includes(q) ||
+        (m.dodoProductId ?? "").toLowerCase().includes(q) ||
         m.billingFrequency.toLowerCase().includes(q)
       );
     });
@@ -118,16 +149,27 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
       ),
     },
     {
-      key: "polarPriceId",
-      header: "Polar Price ID",
-      render: (m: PlanMapping) => (
-        <code
-          className="text-xs bg-surface-hover px-2 py-0.5 rounded-[2px] max-w-[160px] block truncate text-text-secondary"
-          title={m.polarPriceId}
-        >
-          {m.polarPriceId}
-        </code>
-      ),
+      key: "dodoProductId",
+      header: "Dodo Product",
+      render: (m: PlanMapping) =>
+        m.dodoProductId ? (
+          <code
+            className="text-xs bg-surface-hover px-2 py-0.5 rounded-[2px] max-w-[160px] block truncate text-text-secondary"
+            title={m.dodoProductId}
+          >
+            {m.dodoProductId}
+          </code>
+        ) : (
+          <button
+            type="button"
+            disabled={syncingId === m.id}
+            onClick={(e) => { e.stopPropagation(); syncToDodo(m); }}
+            className="inline-flex items-center gap-1 text-xs text-action-primary hover:underline disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3 h-3 ${syncingId === m.id ? "animate-spin" : ""}`} />
+            {syncingId === m.id ? "Syncing…" : "Sync to Dodo"}
+          </button>
+        ),
     },
     {
       key: "amount",
@@ -228,11 +270,12 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
           setEditPlan(null);
         }}
         onSaved={handleSaved}
+        onToast={addToast}
       />
 
       <Header
         title="Packages"
-        description="Manage reusable plans linking Polar prices to AI Accountant modules."
+        description="Manage reusable plans. Saving a new plan auto-creates the product in Dodo Payments."
         actions={
           <Button size="sm" onClick={openAdd}>
             <Plus className="w-3.5 h-3.5 mr-1" /> Add Plan
@@ -246,7 +289,7 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
           setSearch(v);
           setPage(1);
         }}
-        searchPlaceholder="Search by plan name, Polar price ID, or frequency..."
+        searchPlaceholder="Search by plan name, Dodo product ID, or frequency..."
       />
 
       <Table
@@ -263,7 +306,7 @@ export function PlanMappingTab({ planMappings, onRefresh }: PlanMappingTabProps)
             description={
               search
                 ? "Try adjusting your search."
-                : "Create your first plan to link a Polar price to AI Accountant modules."
+                : "Create your first plan to link a Dodo product to AI Accountant modules."
             }
             action={
               !search && (

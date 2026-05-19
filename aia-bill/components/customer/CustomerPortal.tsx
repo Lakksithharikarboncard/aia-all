@@ -2,20 +2,27 @@
 
 import * as React from "react";
 import {
-  Lock, CheckCircle2, AlertTriangle, CreditCard, ExternalLink, Package, Mail, Clock, X,
+  Lock, CheckCircle2, AlertTriangle, CreditCard, ExternalLink, Package, Mail, Clock, X, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/reui/alert";
 import { Frame, FramePanel } from "@/components/reui/frame";
 import {
-  MODULES, getCustomer, loadPlanMappings, saveUpgradeRequest, addAuditEntry,
+  MODULES, getCustomer, saveCustomer, loadPlanMappings, saveUpgradeRequest, addAuditEntry,
 } from "@/lib/billing";
 import type { CustomerAccount, PlanMapping, UpgradeRequest, ModuleId } from "@/lib/billing";
 
-// ─── Billing info URL (dynamic by customer) ────────────────────────────
-function billingInfoUrl(customerId: string): string {
-  return `https://sandbox.polar.sh/dashboard/korefi-dev-1/customers/${customerId}`;
+async function openBillingPortal(customerAccountId: string) {
+  const res = await fetch("/api/dodo/customer-portal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customerAccountId }),
+  });
+  if (res.ok) {
+    const { url } = await res.json();
+    window.open(url, "_blank");
+  }
 }
 
 // ─── Toast ─────────────────────────────────────────────────────────────
@@ -42,9 +49,40 @@ export function CustomerPortal({ customerId }: { customerId: string }) {
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    const c = getCustomer(customerId);
-    setCustomer(c ?? null);
+    // Load from localStorage immediately (fast, works offline)
+    const local = getCustomer(customerId);
+    setCustomer(local ?? null);
     setPlanMappings(loadPlanMappings());
+
+    // Server is authoritative for payment status — always overrides localStorage
+    fetch(`/api/customers/${customerId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.customer) return;
+        const serverCustomer = data.customer;
+
+        // If still payment_pending on server, auto-resync from Dodo in case
+        // webhooks aren't configured and payment was completed.
+        if (serverCustomer.status === "payment_pending" && serverCustomer.dodoCustomerId) {
+          return fetch(`/api/dodo/resync/${customerId}`, { method: "POST" })
+            .then((r) => r.ok ? r.json() : null)
+            .then((resync) => {
+              // Reload from server after resync
+              return fetch(`/api/customers/${customerId}`)
+                .then((r) => r.ok ? r.json() : null)
+                .then((fresh) => fresh?.customer ?? serverCustomer);
+            })
+            .catch(() => serverCustomer);
+        }
+        return serverCustomer;
+      })
+      .then((customer) => {
+        if (customer) {
+          setCustomer(customer);
+          saveCustomer(customer);
+        }
+      })
+      .catch(() => {/* silently use localStorage */});
   }, [customerId]);
 
   if (!customer) {
@@ -168,7 +206,7 @@ export function CustomerPortal({ customerId }: { customerId: string }) {
                 Your account access has been suspended. Please contact our support team or manage your billing to restore access.
               </p>
               <div className="flex flex-col gap-3">
-                <Button onClick={() => alert("This would open the Polar Customer Portal to manage your subscription.")}>
+                <Button onClick={() => openBillingPortal(customer.id)}>
                   <CreditCard className="w-4 h-4 mr-2" /> Manage Billing
                 </Button>
                 <Button variant="outline" onClick={() => { window.location.href = "mailto:cs@korefi.ai"; }}>
@@ -202,15 +240,23 @@ export function CustomerPortal({ customerId }: { customerId: string }) {
                     Complete Payment
                   </Button>
                 )}
+                <Button variant="outline" onClick={async () => {
+                  const res = await fetch(`/api/dodo/resync/${customer.id}`, { method: "POST" });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === "active") {
+                      window.location.reload();
+                    } else {
+                      setToast("Payment not confirmed yet — please try again in a moment.");
+                    }
+                  }
+                }}>
+                  <RefreshCw className="w-4 h-4 mr-2" /> I've Paid — Check Status
+                </Button>
                 <Button variant="outline" onClick={() => { window.location.href = "mailto:cs@korefi.ai"; }}>
                   <Mail className="w-4 h-4 mr-2" /> Contact CS
                 </Button>
               </div>
-              {customer.checkoutUrl && (
-                <p className="text-xs text-[#8b949e] mt-4 break-all">
-                  Checkout URL: {customer.checkoutUrl}
-                </p>
-              )}
             </div>
           </div>
         )}
@@ -288,16 +334,6 @@ function BillingTab({
   packageModules: ModuleId[];
   onRequestAccess: (moduleId: ModuleId) => void;
 }) {
-  const statusLabel: Record<string, { label: string; color: string }> = {
-    active:          { label: "Active",           color: "bg-[#dafbe1] text-[#1a7f37]" },
-    trial:           { label: "Trial Active",     color: "bg-[#ddf4ff] text-[#0969da]" },
-    grace:           { label: "Grace Period",     color: "bg-[#fff8c5] text-[#9a6700]" },
-    payment_pending: { label: "Payment Pending",  color: "bg-[#fff8c5] text-[#9a6700]" },
-    draft:           { label: "Draft",            color: "bg-[#f6f8fa] text-[#656d76]" },
-    frozen:          { label: "Frozen",           color: "bg-[#ffebe9] text-[#cf222e]" },
-    inactive:        { label: "Inactive",         color: "bg-[#f6f8fa] text-[#8b949e]" },
-  };
-  const sc = statusLabel[customer.status] ?? statusLabel.draft;
   const includedModules = React.useMemo(
     () => new Set<ModuleId>([...packageModules, "tally_zoho"]),
     [packageModules]
@@ -309,29 +345,20 @@ function BillingTab({
         <h3 className="text-base font-semibold text-[#1f2328] mb-5">Billing</h3>
 
         <div className="bg-[#ddf4ff] rounded-md p-5 mb-5 border border-[#a6d1f6]">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#0969da] mb-1">
-                {packageName}
-              </p>
-              {packageAmount ? (
-                <p className="text-2xl font-bold text-[#1f2328]">
-                  ₹{packageAmount.toLocaleString("en-IN")}
-                  <span className="text-base font-normal text-[#656d76] ml-1">/ {packageBillingFrequency}</span>
-                </p>
-              ) : (
-                <p className="text-[#8b949e] text-sm mt-1">Contact your CS team to get a plan assigned.</p>
-              )}
-            </div>
-            <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", sc.color)}>{sc.label}</span>
-          </div>
+          <p className="text-sm font-medium text-[#0969da] mb-1">
+            {packageName}
+          </p>
+          {packageAmount ? (
+            <p className="text-2xl font-bold text-[#1f2328]">
+              ₹{packageAmount.toLocaleString("en-IN")}
+              <span className="text-base font-normal text-[#656d76] ml-1">/ {packageBillingFrequency}</span>
+            </p>
+          ) : (
+            <p className="text-[#8b949e] text-sm mt-1">Contact your CS team to get a plan assigned.</p>
+          )}
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b border-[#f0f2f4]">
-            <span className="text-[#656d76]">Billing Frequency</span>
-            <span className="font-medium text-[#1f2328] capitalize">{packageBillingFrequency ?? "—"}</span>
-          </div>
           <div className="flex justify-between py-2 border-b border-[#f0f2f4]">
             <span className="text-[#656d76]">Next Renewal</span>
             <span className="font-medium text-[#1f2328]">
@@ -341,29 +368,25 @@ function BillingTab({
             </span>
           </div>
           {customer.graceEndsAt && (
-            <div className="flex justify-between py-2 border-b border-[#f0f2f4]">
+            <div className="flex justify-between py-2">
               <span className="text-[#656d76]">Grace Period Ends</span>
               <span className="font-medium text-[#9a6700]">
                 {new Date(customer.graceEndsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
           )}
-          <div className="flex justify-between py-2">
-            <span className="text-[#656d76]">Account Status</span>
-            <span className={cn("font-medium", sc.color.split(" ")[1])}>{sc.label}</span>
-          </div>
         </div>
 
         <div className="mt-6 pt-5 border-t border-[#f0f2f4] flex flex-col gap-3">
           <Button
             variant="outline"
-            onClick={() => window.open(billingInfoUrl(customer.id), "_blank")}
+            onClick={() => openBillingPortal(customer.id)}
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            View Billing Info
+            Manage Billing
           </Button>
           <p className="text-xs text-[#8b949e]">
-            Open the billing record in Polar to review customer billing details.
+            Manage your subscription, update payment method, or view invoices.
           </p>
         </div>
       </div>
@@ -394,22 +417,6 @@ function BillingTab({
         </div>
       </div>
 
-      {packageModules.length > 0 && (
-        <div className="bg-white rounded-md border border-[#d0d7de] p-6 shadow-[0_1px_0_rgba(31,35,40,0.04)]">
-          <h3 className="text-base font-semibold text-[#1f2328] mb-3">Package Includes</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {packageModules.map((mid) => {
-              const m = MODULES.find((mod) => mod.id === mid);
-              return (
-                <div key={mid} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#1a7f37] shrink-0" />
-                  <span className="text-[#1f2328]">{m?.name ?? mid}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

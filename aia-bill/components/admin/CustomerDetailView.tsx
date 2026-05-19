@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  ArrowLeft, Lock, Unlock, Edit, Link as LinkIcon, RefreshCw, Clock, Globe, Mail, CheckCircle2,
+  Lock, Edit, Link as LinkIcon, RefreshCw, Clock, Globe, Mail, CheckCircle2, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/mds/Container";
@@ -11,14 +11,11 @@ import { Breadcrumbs } from "@/components/mds/Breadcrumbs";
 import { StatusIndicator, STATUS_MAP, STATUS_LABELS } from "@/components/mds/StatusIndicator";
 import { Button } from "@/components/mds/Button";
 import { Tabs } from "@base-ui/react/tabs";
-import { Select as BaseSelect } from "@base-ui/react/select";
 import { StatusBadge, Avatar } from "./components/StatusBadge";
 import { InfoRow, InfoGrid } from "./components/InfoRow";
-import { ReasonModal } from "./components/ReasonModal";
 import {
-  getCustomer, saveCustomer, updateCustomerStatus, updateCustomerModules,
-  assignPlanToCustomer, generateSignupInviteLink,
-  addNoteToCustomer, MODULES,
+  getCustomer, saveCustomer, deleteCustomer, updateCustomerStatus, updateCustomerModules,
+  generateSignupInviteLink, addNoteToCustomer, MODULES,
 } from "@/lib/billing";
 import { useToast } from "@/components/ui/Toast";
 import type { CustomerAccount, PlanMapping, AccountStatus, ModuleId } from "@/lib/billing";
@@ -32,16 +29,6 @@ interface CustomerDetailViewProps {
   onRefresh: () => void;
 }
 
-const STATUS_OPTIONS: { value: AccountStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "trial", label: "Trial" },
-  { value: "payment_pending", label: "Payment Pending" },
-  { value: "active", label: "Active" },
-  { value: "renewal", label: "Renewal" },
-  { value: "grace", label: "Grace" },
-  { value: "frozen", label: "Frozen" },
-  { value: "inactive", label: "Inactive" },
-];
 
 export function CustomerDetailView({
   customerId,
@@ -61,53 +48,85 @@ export function CustomerDetailView({
 
   React.useEffect(() => { reload(); }, [customerId]);
 
-  const generatePolarCheckout = async () => {
+  const generateDodoCheckout = async () => {
     try {
-      const res = await fetch("/api/polar/checkout", {
+      if (!plan?.dodoProductId) {
+        addToast("Sync the plan to Dodo first (Plans tab → Sync to Dodo)", "error");
+        return;
+      }
+      const trialDays = customer?.status === "trial" ? 14 : undefined;
+      const res = await fetch("/api/dodo/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerAccountId: customerId, planMappingId: customer?.selectedPlanMappingId }),
+        body: JSON.stringify({
+          customerAccountId: customerId,
+          primaryName: customer?.primaryName,
+          primaryEmail: customer?.primaryEmail,
+          primaryPhone: customer?.primaryPhone,
+          dodoCustomerId: customer?.dodoCustomerId,
+          dodoProductId: plan?.dodoProductId,
+          trialDays,
+          customerSnapshot: customer,
+        }),
       });
-      if (!res.ok) throw new Error("Checkout creation failed");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Checkout creation failed");
+      }
       const data = await res.json();
+      // Persist dodoCustomerId + checkoutUrl back to localStorage
       const updated = getCustomer(customerId);
       if (updated) {
-        updated.checkoutUrl = data.url;
-        saveCustomer(updated);
+        saveCustomer({
+          ...updated,
+          dodoCustomerId: data.dodoCustomerId ?? updated.dodoCustomerId,
+          checkoutUrl: data.url,
+          status: "payment_pending",
+        });
       }
       onRefresh();
       reload();
       copyToClipboard(data.url);
       addToast("Checkout link generated and copied!", "success");
-    } catch {
-      addToast("Failed to generate checkout link", "error");
+    } catch (err: any) {
+      addToast(err?.message ?? "Failed to generate checkout link", "error");
     }
   };
 
-  const openPolarPortal = async () => {
+  const resyncFromDodo = async () => {
     try {
-      const res = await fetch("/api/polar/customer-session", {
+      const res = await fetch(`/api/dodo/resync/${customerId}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Resync failed");
+      // Update localStorage so the UI reflects immediately
+      const updated = getCustomer(customerId);
+      if (updated) {
+        saveCustomer({
+          ...updated,
+          status: data.status,
+          dodoSubscriptionId: data.subscriptionId ?? updated.dodoSubscriptionId,
+        });
+      }
+      onRefresh();
+      reload();
+      addToast(`Resynced — status is now "${data.status}"`, "success");
+    } catch (err: any) {
+      addToast(err?.message ?? "Resync failed", "error");
+    }
+  };
+
+  const openDodoPortal = async () => {
+    try {
+      const res = await fetch("/api/dodo/customer-portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerAccountId: customerId }),
       });
-      if (!res.ok) throw new Error("Failed to create session");
+      if (!res.ok) throw new Error("Failed to create portal session");
       const data = await res.json();
       window.open(data.url, "_blank");
     } catch {
-      addToast("Failed to open Polar portal", "error");
-    }
-  };
-
-  const resyncFromPolar = async () => {
-    try {
-      const res = await fetch(`/api/polar/resync/${customerId}`, { method: "POST" });
-      if (!res.ok) throw new Error("Resync failed");
-      onRefresh();
-      reload();
-      addToast("Status resynced from Polar", "success");
-    } catch {
-      addToast("Failed to resync from Polar", "error");
+      addToast("Failed to open billing portal", "error");
     }
   };
 
@@ -115,9 +134,6 @@ export function CustomerDetailView({
 
   const plan = planMappings.find((p) => p.id === customer.selectedPlanMappingId);
   const packageName = customer.packageName ?? plan?.name ?? "No package assigned";
-  const packageAmount = customer.packageAmount ?? plan?.amount;
-  const packageBillingFrequency = customer.packageBillingFrequency ?? plan?.billingFrequency;
-  const packageModules = customer.packageModules ?? plan?.modulesUnlocked ?? customer.purchasedModules;
 
   const copyToClipboard = (text: string) => {
     if (navigator.clipboard?.writeText) {
@@ -152,26 +168,6 @@ export function CustomerDetailView({
 
   return (
     <div>
-      {/* Modals (unchanged) */}
-      {modal === "freeze" && (
-        <ReasonModal
-          title="Freeze Account"
-          description={`Freeze ${customer.companyName}? Their access will be blocked.`}
-          confirmLabel="Freeze Account"
-          confirmVariant="danger"
-          onConfirm={(r) => doAction(() => updateCustomerStatus(customerId, "frozen", "CS User", r))}
-          onClose={() => setModal(null)}
-        />
-      )}
-      {modal === "unfreeze" && (
-        <ReasonModal
-          title="Unfreeze Account"
-          description={`Restore access for ${customer.companyName}?`}
-          confirmLabel="Unfreeze"
-          onConfirm={(r) => doAction(() => updateCustomerStatus(customerId, "active", "CS User", r))}
-          onClose={() => setModal(null)}
-        />
-      )}
       {modal === "modules" && (
         <ModuleUpdateModal
           customer={customer}
@@ -179,23 +175,48 @@ export function CustomerDetailView({
           onClose={() => setModal(null)}
         />
       )}
-      {modal === "status" && (
-        <StatusChangeModal
-          currentStatus={customer.status}
-          onConfirm={(status, reason) => doAction(() => updateCustomerStatus(customerId, status, "CS User", reason))}
+      {modal === "freeze" && (
+        <FreezeModal
+          companyName={customer.companyName}
+          onConfirm={(reason) => doAction(() => updateCustomerStatus(customerId, "frozen", "CS User", reason))}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "unfreeze" && (
+        <FreezeModal
+          companyName={customer.companyName}
+          unfreeze
+          onConfirm={(reason) => doAction(() => updateCustomerStatus(customerId, "active", "CS User", reason))}
           onClose={() => setModal(null)}
         />
       )}
       {modal === "note" && (
-        <ReasonModal
-          title="Add Note"
-          description="Add an internal note to this customer."
-          required={false}
-          confirmLabel="Save Note"
-          onConfirm={(reason) => {
-            if (reason.trim()) {
-              doAction(() => addNoteToCustomer(customerId, reason, "CS User"));
-            }
+        <NoteModal
+          onConfirm={(note) => doAction(() => addNoteToCustomer(customerId, note, "CS User"))}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "editContact" && (
+        <EditContactModal
+          customer={customer}
+          onConfirm={(patch) => {
+            saveCustomer({ ...customer, ...patch });
+            onRefresh();
+            reload();
+            setModal(null);
+            addToast("Contact updated", "success");
+          }}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "delete" && (
+        <DeleteConfirmModal
+          companyName={customer.companyName}
+          onConfirm={() => {
+            deleteCustomer(customerId);
+            setModal(null);
+            onRefresh();
+            onBack();
           }}
           onClose={() => setModal(null)}
         />
@@ -241,10 +262,11 @@ export function CustomerDetailView({
               <InfoRow label="Created" value={new Date(customer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} />
             </InfoGrid>
 
-            <InfoGrid title="Primary User">
+            <InfoGrid title="Primary User" action={<button onClick={() => setModal("editContact")} className="text-xs text-action-primary hover:underline font-medium">Edit</button>}>
               <InfoRow label="Name" value={customer.primaryName} />
               <InfoRow label="Phone" value={customer.primaryPhone} />
               <InfoRow label="Email" value={customer.primaryEmail} full />
+              {customer.secondaryEmail && <InfoRow label="Secondary Email" value={customer.secondaryEmail} full />}
               <div className="col-span-2 pt-2 border-t border-border-divider">
                 {(customer.status === "trial" || customer.status === "draft" || customer.status === "payment_pending") && (
                   <>
@@ -294,7 +316,7 @@ export function CustomerDetailView({
                           )}
                         </div>
                         <div className="flex gap-2 mt-3">
-                          <Button size="sm" variant="normal" onClick={generatePolarCheckout}>
+                          <Button size="sm" variant="normal" onClick={generateDodoCheckout}>
                             <LinkIcon className="w-4 h-4 mr-2" /> Generate Checkout Link
                           </Button>
                           {customer.checkoutUrl && (
@@ -319,6 +341,21 @@ export function CustomerDetailView({
               <InfoRow label="Email" value={customer.billingEmail} full />
             </InfoGrid>
 
+            {/* Customer Needs — reference context from creation */}
+            {(customer.expectedBills || customer.expectedInvoices || customer.expectedStatements || customer.accountingSoftware?.length) ? (
+              <InfoGrid title="Customer Needs">
+                {!!customer.expectedBills && <InfoRow label="Bills / mo" value={String(customer.expectedBills)} />}
+                {!!customer.expectedInvoices && <InfoRow label="Invoices / mo" value={String(customer.expectedInvoices)} />}
+                {!!customer.expectedStatements && <InfoRow label="Statements / mo" value={String(customer.expectedStatements)} />}
+                {!!customer.accountingSoftware?.length && (
+                  <InfoRow label="Accounting Software" value={customer.accountingSoftware.map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")} full />
+                )}
+                {!!customer.startDate && (
+                  <InfoRow label="Start Date" value={new Date(customer.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} />
+                )}
+              </InfoGrid>
+            ) : null}
+
             <InfoGrid title="Notes" columns={false}>
               <p className="text-sm text-text-body whitespace-pre-wrap leading-relaxed">
                 {customer.notes || <span className="text-text-disabled italic">No notes yet.</span>}
@@ -329,84 +366,49 @@ export function CustomerDetailView({
 
         <Tabs.Panel value="plan" className="pt-6">
           <div className="space-y-5">
-            <Container
-              header={<Header variant="container" title="Assign Plan" />}
-            >
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-text-heading mb-1.5">Package</label>
-                  <BaseSelect.Root
-                    value={customer.selectedPlanMappingId ?? ""}
-                    onValueChange={(v) => {
-                      if (v) {
-                        assignPlanToCustomer(customerId, v as string, "CS User");
-                        onRefresh(); reload();
-                      }
-                    }}
-                    items={[{ value: "", label: "— No plan —" }, ...planMappings.filter((p) => p.active).map((p) => ({ value: p.id, label: `${p.name} — ₹${p.amount.toLocaleString("en-IN")}/${p.billingFrequency}` }))]}
-                  >
-                    <BaseSelect.Trigger className="flex h-9 w-full items-center justify-between gap-2 rounded-[4px] border border-border-default bg-white pl-3 pr-2.5 text-sm text-text-body select-none hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-action-primary data-[popup-open]:bg-surface-hover min-w-[200px]">
-                      <BaseSelect.Value className="data-[placeholder]:text-text-disabled" placeholder="— No plan —" />
-                      <BaseSelect.Icon className="flex text-text-disabled">
-                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1L5 5L9 1" /></svg>
-                      </BaseSelect.Icon>
-                    </BaseSelect.Trigger>
-                    <BaseSelect.Portal>
-                      <BaseSelect.Positioner className="outline-hidden z-10" sideOffset={4} alignItemWithTrigger={false}>
-                        <BaseSelect.Popup className="min-w-[var(--anchor-width)] origin-[var(--transform-origin)] rounded-[4px] bg-white py-1 text-text-body outline-1 outline-border-default">
-                          <BaseSelect.List className="py-1 overflow-y-auto max-h-[var(--available-height)]">
-                            {[{ value: "", label: "— No plan —" }, ...planMappings.filter((p) => p.active).map((p) => ({ value: p.id, label: `${p.name} — ₹${p.amount.toLocaleString("en-IN")}/${p.billingFrequency}` }))].map((opt) => (
-                              <BaseSelect.Item key={opt.value} value={opt.value} className="grid cursor-default grid-cols-[0.75rem_1fr] items-center gap-2 py-2 pr-4 pl-2.5 text-sm leading-4 outline-hidden select-none data-[highlighted]:bg-surface-hover data-[highlighted]:text-text-heading">
-                                <BaseSelect.ItemIndicator className="col-start-1">
-                                  <svg className="size-3" fill="currentColor" viewBox="0 0 10 10"><path d="M9.16 1.12c.35.23.45.7.22 1.04L5.14 8.66a.74.74 0 0 1-1.13.15L1.25 6.3a.74.74 0 1 1 1.01-1.06l2.1 1.91L8.12 1.34a.74.74 0 0 1 1.04-.22Z" /></svg>
-                                </BaseSelect.ItemIndicator>
-                                <BaseSelect.ItemText className="col-start-2">{opt.label}</BaseSelect.ItemText>
-                              </BaseSelect.Item>
-                            ))}
-                          </BaseSelect.List>
-                        </BaseSelect.Popup>
-                      </BaseSelect.Positioner>
-                    </BaseSelect.Portal>
-                  </BaseSelect.Root>
-                </div>
-              </div>
-
-              {(plan || customer.packageName) && (
-                <div className="mt-5 flex items-baseline gap-x-6 gap-y-2 flex-wrap px-4 py-3 bg-surface-bg border border-border-default rounded-[3px]">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
-                      Current Package
-                    </span>
-                    <span className="text-sm font-semibold text-text-heading mt-0.5">
-                      {packageName}
-                    </span>
-                  </div>
-                  {packageAmount && (
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
-                        Price
-                      </span>
-                      <span className="text-sm font-semibold text-text-heading tabular-nums mt-0.5">
-                        ₹{packageAmount.toLocaleString("en-IN")}
-                        <span className="text-text-secondary font-normal"> / {packageBillingFrequency}</span>
-                      </span>
-                    </div>
+            {/* Plan summary */}
+            <Container header={<Header variant="container" title="Current Plan" />}>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <p className="text-base font-semibold text-text-heading">{packageName}</p>
+                  {customer.packageBillingFrequency && (
+                    <p className="text-xs text-text-secondary mt-0.5 capitalize">{customer.packageBillingFrequency} billing</p>
                   )}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
-                      Modules
-                    </span>
-                    <span className="text-sm font-semibold text-text-heading tabular-nums mt-0.5">
-                      {packageModules.length} unlocked
-                    </span>
+                </div>
+                {customer.packageAmount ? (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-text-heading tabular-nums">
+                      ₹{customer.packageAmount.toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5 capitalize">
+                      per {(customer.packageBillingFrequency ?? plan?.billingFrequency ?? "month").replace(/ly$/, "")}
+                    </p>
                   </div>
+                ) : plan?.amount ? (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-text-heading tabular-nums">
+                      ₹{plan.amount.toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5 capitalize">
+                      per {plan.billingFrequency.replace(/ly$/, "")}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-disabled">No price set</p>
+                )}
+              </div>
+              {customer.renewalDueDate && (
+                <div className="mt-4 pt-4 border-t border-border-divider flex items-center justify-between text-sm">
+                  <span className="text-text-secondary">Next renewal</span>
+                  <span className="font-medium text-text-heading">
+                    {new Date(customer.renewalDueDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                  </span>
                 </div>
               )}
             </Container>
 
-            <Container
-              header={<Header variant="container" title="Purchased Modules" />}
-            >
+            {/* Module access */}
+            <Container header={<Header variant="container" title="Module Access" />}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {MODULES.map((m) => {
                   const has = customer.purchasedModules.includes(m.id);
@@ -429,34 +431,15 @@ export function CustomerDetailView({
 
         <Tabs.Panel value="payments" className="pt-6">
           <div className="space-y-5">
-            <InfoGrid title="Polar Integration">
-              <InfoRow label="Polar Customer ID" value={customer.polarCustomerId ?? "Not set"} mono />
-              <InfoRow label="Polar Subscription ID" value={customer.polarSubscriptionId ?? "Not set"} mono />
+            <InfoGrid title="Dodo Payments">
+              <InfoRow label="Dodo Customer ID" value={customer.dodoCustomerId ?? "Not linked"} mono />
+              <InfoRow label="Dodo Subscription ID" value={customer.dodoSubscriptionId ?? "Not linked"} mono />
               <InfoRow label="Subscription Status" value={customer.status} />
               {customer.status === "trial" && (
                 <>
                   <InfoRow label="Trial Start" value={customer.trialStartsAt ? new Date(customer.trialStartsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"} />
                   <InfoRow label="Trial End" value={customer.trialEndsAt ? new Date(customer.trialEndsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"} />
                 </>
-              )}
-              {customer.checkoutUrl && (
-                <div className="col-span-2 flex flex-col gap-1 min-w-0">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
-                    Checkout URL
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <code className="text-xs bg-surface-hover px-2 py-1 rounded-[2px] flex-1 truncate text-text-secondary">{customer.checkoutUrl}</code>
-                    <button onClick={() => copyToClipboard(customer.checkoutUrl!)} className="text-xs text-text-link hover:underline shrink-0">
-                      {copied ? "Copied!" : "Copy"}
-                    </button>
-                    <a
-                      href={`mailto:${customer.primaryEmail},${customer.billingEmail}?subject=${encodeURIComponent("Complete your payment")}&body=${encodeURIComponent(`Hi ${customer.primaryName},\n\nComplete your payment: ${customer.checkoutUrl}`)}`}
-                      className="inline-flex items-center gap-1 text-xs text-text-link hover:underline shrink-0"
-                    >
-                      <Mail className="w-3.5 h-3.5" /> Email
-                    </a>
-                  </div>
-                </div>
               )}
               <InfoRow label="Next Renewal" value={customer.renewalDueDate ? new Date(customer.renewalDueDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"} />
               {customer.graceEndsAt && <InfoRow label="Grace Ends" value={new Date(customer.graceEndsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} />}
@@ -466,31 +449,21 @@ export function CustomerDetailView({
               header={<Header variant="container" title="Payment Actions" />}
             >
               <div className="flex flex-wrap gap-3">
-                {(customer.status === "draft" || customer.status === "payment_pending") && (
-                  <Button variant="normal" onClick={generatePolarCheckout}>
-                    <LinkIcon className="w-4 h-4 mr-2" /> Generate / Resend Checkout Link
+                {customer.status === "trial" && (
+                  <Button variant="normal" onClick={() => {
+                    const nextEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    const updated = { ...customer, trialEndsAt: nextEndDate };
+                    saveCustomer(updated);
+                    onRefresh(); reload();
+                  }}>
+                    <Clock className="w-4 h-4 mr-2" /> Extend Trial (14 days)
                   </Button>
                 )}
-                {customer.status === "trial" && (
-                  <>
-                    <Button variant="normal" onClick={() => {
-                      const nextEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-                      const updated = { ...customer, trialEndsAt: nextEndDate };
-                      saveCustomer(updated);
-                      onRefresh(); reload();
-                    }}>
-                      <Clock className="w-4 h-4 mr-2" /> Extend Trial (14 days)
-                    </Button>
-                    <Button variant="normal" onClick={generatePolarCheckout}>
-                      <LinkIcon className="w-4 h-4 mr-2" /> Convert to Paid Early
-                    </Button>
-                  </>
-                )}
-                <Button variant="normal" onClick={openPolarPortal}>
-                  <Globe className="w-4 h-4 mr-2" /> Open Polar Portal
+                <Button variant="normal" onClick={resyncFromDodo} disabled={!customer.dodoCustomerId}>
+                  <RefreshCw className="w-4 h-4 mr-2" /> Resync from Dodo
                 </Button>
-                <Button variant="normal" onClick={resyncFromPolar}>
-                  <RefreshCw className="w-4 h-4 mr-2" /> Resync Status
+                <Button variant="normal" onClick={openDodoPortal} disabled={!customer.dodoCustomerId}>
+                  <Globe className="w-4 h-4 mr-2" /> Open Billing Portal
                 </Button>
               </div>
             </Container>
@@ -499,27 +472,63 @@ export function CustomerDetailView({
 
         <Tabs.Panel value="actions" className="pt-6">
           <div className="space-y-5">
-            <Container
-              header={<Header variant="container" title="Account Control" />}
-            >
-              <div className="flex flex-wrap gap-3">
-                {customer.status !== "frozen" ? (
-                  <Button variant="danger" onClick={() => setModal("freeze")}>
-                    <Lock className="w-4 h-4 mr-2" /> Freeze Account
+            <Container header={<Header variant="container" title="Account Control" />}>
+              <div className="space-y-4">
+                {/* Freeze / Unfreeze */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text-heading">
+                      {customer.status === "frozen" ? "Account Frozen" : "Freeze Account"}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {customer.status === "frozen"
+                        ? `Frozen ${customer.frozenAt ? new Date(customer.frozenAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""}. Unfreeze to restore access.`
+                        : "Suspend access for compliance, fraud, or contractual reasons."}
+                    </p>
+                  </div>
+                  {customer.status === "frozen" ? (
+                    <Button variant="normal" size="sm" onClick={() => setModal("unfreeze")}>
+                      Unfreeze
+                    </Button>
+                  ) : (
+                    <Button variant="danger" size="sm" onClick={() => setModal("freeze")}>
+                      Freeze
+                    </Button>
+                  )}
+                </div>
+                <hr className="border-border-divider" />
+                {/* Modules */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text-heading">Module Access</p>
+                    <p className="text-xs text-text-secondary mt-0.5">Grant or revoke individual module access.</p>
+                  </div>
+                  <Button variant="normal" size="sm" onClick={() => setModal("modules")}>
+                    <Edit className="w-3.5 h-3.5 mr-1.5" /> Update
                   </Button>
-                ) : (
-                  <Button variant="normal" onClick={() => setModal("unfreeze")}>
-                    <Unlock className="w-4 h-4 mr-2" /> Unfreeze Account
+                </div>
+                <hr className="border-border-divider" />
+                {/* Note */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text-heading">Add Note</p>
+                    <p className="text-xs text-text-secondary mt-0.5">Visible to internal team only.</p>
+                  </div>
+                  <Button variant="normal" size="sm" onClick={() => setModal("note")}>
+                    <Edit className="w-3.5 h-3.5 mr-1.5" /> Add
                   </Button>
-                )}
-                <Button variant="normal" onClick={() => setModal("modules")}>
-                  <Edit className="w-4 h-4 mr-2" /> Update Modules
-                </Button>
-                <Button variant="normal" onClick={() => setModal("status")}>
-                  <RefreshCw className="w-4 h-4 mr-2" /> Change Status
-                </Button>
-                <Button variant="normal" onClick={() => setModal("note")}>
-                  <Edit className="w-4 h-4 mr-2" /> Add Note
+                </div>
+              </div>
+            </Container>
+
+            <Container header={<Header variant="container" title="Danger Zone" />}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-text-heading">Delete customer</p>
+                  <p className="text-xs text-text-secondary mt-0.5">Permanently removes this customer and all associated data. This cannot be undone.</p>
+                </div>
+                <Button variant="danger" size="sm" onClick={() => setModal("delete")}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
                 </Button>
               </div>
             </Container>
@@ -587,43 +596,183 @@ function ModuleUpdateModal({
   );
 }
 
-// ─── Status Change Modal (restyled) ──────────────────────────────────
-function StatusChangeModal({
-  currentStatus,
+// ─── Freeze / Unfreeze Modal ──────────────────────────────────────────
+function FreezeModal({
+  companyName,
+  unfreeze = false,
   onConfirm,
   onClose,
 }: {
-  currentStatus: AccountStatus;
-  onConfirm: (status: AccountStatus, reason: string) => void;
+  companyName: string;
+  unfreeze?: boolean;
+  onConfirm: (reason: string) => void;
   onClose: () => void;
 }) {
-  const [selectedStatus, setSelectedStatus] = React.useState<AccountStatus>(currentStatus);
   const [reason, setReason] = React.useState("");
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="bg-white rounded-[4px] border border-border-default w-full max-w-md p-6">
-        <h3 className="text-base font-semibold text-text-heading mb-4">Change Status</h3>
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value as AccountStatus)}
-          className="w-full h-8 px-3 rounded-[4px] border border-border-default text-sm outline-none mb-4 bg-white text-text-body"
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
+        <h3 className="text-base font-semibold text-text-heading mb-1">
+          {unfreeze ? "Unfreeze account" : "Freeze account"}
+        </h3>
+        <p className="text-sm text-text-secondary mb-4">
+          {unfreeze
+            ? `Restores access for ${companyName}. Status will return to active.`
+            : `Suspends all access for ${companyName}. This overrides their payment status.`}
+        </p>
+        <label className="block text-xs font-medium text-text-secondary mb-1.5">Reason (required)</label>
         <textarea
-          rows={2}
-          placeholder="Reason (required)..."
+          autoFocus
+          rows={3}
+          placeholder={unfreeze ? "Why is access being restored?" : "Why is access being suspended?"}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           className="w-full px-3 py-2 border border-border-default rounded-[4px] text-sm outline-none focus:border-action-primary resize-none mb-4"
         />
+        <div className="flex gap-2 justify-end">
+          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+          <Button
+            size="sm"
+            variant={unfreeze ? "primary" : "danger"}
+            disabled={!reason.trim()}
+            onClick={() => onConfirm(reason.trim())}
+          >
+            {unfreeze ? "Restore access" : "Freeze account"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Note Modal ──────────────────────────────────────────────────────
+function NoteModal({
+  onConfirm,
+  onClose,
+}: {
+  onConfirm: (note: string) => void;
+  onClose: () => void;
+}) {
+  const [note, setNote] = React.useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-[4px] border border-border-default w-full max-w-md p-6">
+        <h3 className="text-base font-semibold text-text-heading mb-1">Add Note</h3>
+        <p className="text-sm text-text-secondary mb-4">Internal note — visible to CS only.</p>
+        <textarea
+          autoFocus
+          rows={4}
+          placeholder="What should the team know?"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="w-full px-3 py-2 border border-border-default rounded-[4px] text-sm outline-none focus:border-action-primary resize-none mb-4"
+        />
         <div className="flex gap-3 justify-end">
           <Button variant="normal" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" disabled={!reason.trim()} onClick={() => onConfirm(selectedStatus, reason)}>
-            Update Status
+          <Button size="sm" disabled={!note.trim()} onClick={() => onConfirm(note.trim())}>
+            Save Note
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Edit Contact Modal ───────────────────────────────────────────────
+function EditContactModal({
+  customer,
+  onConfirm,
+  onClose,
+}: {
+  customer: CustomerAccount;
+  onConfirm: (patch: Partial<CustomerAccount>) => void;
+  onClose: () => void;
+}) {
+  const [phone, setPhone] = React.useState(customer.primaryPhone ?? "");
+  const [email, setEmail] = React.useState(customer.primaryEmail ?? "");
+  const [secondary, setSecondary] = React.useState(customer.secondaryEmail ?? "");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-[4px] border border-border-default w-full max-w-md p-6">
+        <h3 className="text-base font-semibold text-text-heading mb-4">Edit Contact</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">Primary Email</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email"
+              className="w-full h-8 px-3 rounded-[4px] border border-border-default text-sm outline-none focus:border-action-primary bg-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">Secondary Email</label>
+            <input value={secondary} onChange={(e) => setSecondary(e.target.value)} type="email"
+              placeholder="Optional — CC'd on invoices and payment links"
+              className="w-full h-8 px-3 rounded-[4px] border border-border-default text-sm outline-none focus:border-action-primary bg-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">Phone</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel"
+              placeholder="+91 98765 43210"
+              className="w-full h-8 px-3 rounded-[4px] border border-border-default text-sm outline-none focus:border-action-primary bg-white" />
+            <p className="text-[11px] text-text-disabled mt-1">Include country code for Dodo Payments, e.g. +91</p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" disabled={!email.trim()} onClick={() => onConfirm({
+            primaryEmail: email.trim(),
+            primaryPhone: phone.trim(),
+            secondaryEmail: secondary.trim() || undefined,
+          })}>Save</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete Confirmation Modal ────────────────────────────────────────
+function DeleteConfirmModal({
+  companyName,
+  onConfirm,
+  onClose,
+}: {
+  companyName: string;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const [typed, setTyped] = React.useState("");
+  const match = typed.trim().toLowerCase() === companyName.trim().toLowerCase();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-[4px] border border-border-default w-full max-w-md p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-9 h-9 rounded-full bg-[#ffebe9] flex items-center justify-center shrink-0">
+            <Trash2 className="w-4 h-4 text-status-error" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-text-heading">Delete customer?</h3>
+            <p className="text-sm text-text-secondary mt-0.5">
+              This will permanently delete <span className="font-medium text-text-heading">{companyName}</span> and all associated data. This cannot be undone.
+            </p>
+          </div>
+        </div>
+        <div className="mb-4">
+          <label className="block text-xs text-text-secondary mb-1.5">
+            Type <span className="font-medium text-text-body">{companyName}</span> to confirm
+          </label>
+          <input
+            autoFocus
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder={companyName}
+            className="w-full px-3 py-2 border border-border-default rounded-[4px] text-sm outline-none focus:border-status-error focus:ring-2 focus:ring-status-error/20"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" size="sm" disabled={!match} onClick={onConfirm}>
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete permanently
           </Button>
         </div>
       </div>

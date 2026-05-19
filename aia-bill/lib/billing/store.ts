@@ -23,7 +23,7 @@ const KEYS = {
 } as const;
 
 const DATA_VERSION_KEY = "aia-data-version";
-const CURRENT_VERSION = 3;
+const CURRENT_VERSION = 4;
 
 // ─── Generic Storage Helpers ──────────────────────────────────────────
 function getStorage<T>(key: string): T[] {
@@ -149,7 +149,7 @@ export function assignPlanToCustomer(
 export function generateCheckoutLink(customerId: string, actor: string): string {
   const customer = getCustomer(customerId);
   if (customer) {
-    const fakeUrl = `https://checkout.polar.sh/checkout/${customerId}_${Date.now()}`;
+    const fakeUrl = `https://checkout.dodopayments.com/session/${customerId}_${Date.now()}`;
     const oldStatus = customer.status;
     customer.checkoutUrl = fakeUrl;
     customer.status = "payment_pending";
@@ -163,7 +163,7 @@ export function generateCheckoutLink(customerId: string, actor: string): string 
       entityId: customerId,
       oldValue: oldStatus,
       newValue: "payment_pending",
-      reason: "Generated Polar checkout link",
+      reason: "Generated checkout link",
     });
     return fakeUrl;
   }
@@ -380,51 +380,53 @@ export function addAuditEntry(
 }
 
 // ─── Calculator ───────────────────────────────────────────────────────
-export function suggestPlan(input: CalculatorInput): CalculatorResult {
-  const totalDocs =
-    input.billsPerMonth +
-    input.invoicesPerMonth +
-    input.statementsPerMonth * 3;
-  const hasComplex =
-    input.gstNeeded || input.requiredModules.includes("tally_zoho");
+// Base monthly prices per tier. Quarterly = ×3 ×0.9 (10% off). Annual = ×12 ×0.75 (25% off).
+const TIER_BASE_MONTHLY: Record<PlanTier, number> = {
+  starter: 1499,
+  growth:  3999,
+  custom:  7999,
+};
 
+export function tierPrice(tier: PlanTier, freq: CalculatorInput["billingFrequency"]): number {
+  const base = TIER_BASE_MONTHLY[tier];
+  switch (freq) {
+    case "quarterly": return Math.round(base * 3 * 0.9);
+    case "annual":    return Math.round(base * 12 * 0.75);
+    default:          return base;
+  }
+}
+
+export function suggestPlan(input: CalculatorInput): CalculatorResult {
+  const { billsPerMonth: b, invoicesPerMonth: i, statementsPerMonth: s } = input;
   const reasons: string[] = [];
   let tier: PlanTier;
 
-  const tierPrices: Record<PlanTier, Record<CalculatorInput["billingFrequency"], number>> = {
-    starter: { monthly: 1499, quarterly: 4049, annual: 14399 },
-    growth: { monthly: 3999, quarterly: 10799, annual: 39999 },
-    custom: { monthly: 7999, quarterly: 21599, annual: 79999 },
-  };
+  // OR logic: if ANY field exceeds a tier's cap, move up
+  const overCustom = b > 250 || i > 250 || s > 25;
+  const overStarter = b > 100 || i > 100 || s > 10;
 
-  if (
-    totalDocs > 2000 ||
-    hasComplex ||
-    input.requiredModules.length >= 5
-  ) {
+  if (overCustom) {
     tier = "custom";
-    if (totalDocs > 2000) reasons.push(`High document volume (${totalDocs} docs/month)`);
-    if (input.gstNeeded) reasons.push("GST Reconciliation required");
-    if (input.requiredModules.includes("tally_zoho"))
-      reasons.push("Tally/Zoho integration needed");
-    if (input.requiredModules.length >= 5) reasons.push("5+ modules selected");
-  } else if (totalDocs > 500 || input.requiredModules.length >= 3) {
+    if (b > 250) reasons.push(`High bill volume (${b}/mo, cap 250)`);
+    if (i > 250) reasons.push(`High invoice volume (${i}/mo, cap 250)`);
+    if (s > 25)  reasons.push(`High statement volume (${s}/mo, cap 25)`);
+  } else if (overStarter) {
     tier = "growth";
-    if (totalDocs > 500) reasons.push(`Moderate volume (${totalDocs} docs/month)`);
-    if (input.requiredModules.length >= 3) reasons.push(`${input.requiredModules.length} modules selected`);
+    if (b > 100) reasons.push(`Bill volume ${b}/mo exceeds Starter cap (100)`);
+    if (i > 100) reasons.push(`Invoice volume ${i}/mo exceeds Starter cap (100)`);
+    if (s > 10)  reasons.push(`Statement volume ${s}/mo exceeds Starter cap (10)`);
   } else {
     tier = "starter";
-    reasons.push(`Low volume (${totalDocs} docs/month)`);
-    reasons.push("Standard module set");
+    reasons.push(`Volume within Starter limits (≤100 bills, ≤100 invoices, ≤10 statements)`);
   }
 
   const suggestedPrice =
     input.manualOverridePrice !== undefined && input.manualOverridePrice > 0
       ? input.manualOverridePrice
-      : tierPrices[tier][input.billingFrequency];
+      : tierPrice(tier, input.billingFrequency);
 
   if (input.manualOverridePrice !== undefined && input.manualOverridePrice > 0) {
-    reasons.push(`Manual override applied: ₹${input.manualOverridePrice}`);
+    reasons.push(`Manual override: ₹${input.manualOverridePrice}`);
   }
 
   return {
@@ -450,8 +452,7 @@ export function initializeDemoData(): void {
     const demoPlanMappings: PlanMapping[] = [
       {
         id: "plan_starter_monthly",
-        polarProductId: "prod_starter_001",
-        polarPriceId: "price_starter_monthly_001",
+        dodoProductId: "pdt_0Nf668zN2Om2Mydig4YYq",
         name: "Starter Monthly",
         description: "Entry-level plan for small businesses with basic bill/invoice processing",
         amount: 1499,
@@ -461,8 +462,7 @@ export function initializeDemoData(): void {
       },
       {
         id: "plan_growth_monthly",
-        polarProductId: "prod_growth_001",
-        polarPriceId: "price_growth_monthly_001",
+        dodoProductId: "pdt_0Nf66Bh986GTg2dBezpY4",
         name: "Growth Monthly",
         description: "Mid-tier plan with transaction processing and GST reconciliation",
         amount: 3999,
@@ -478,8 +478,7 @@ export function initializeDemoData(): void {
       },
       {
         id: "plan_growth_quarterly",
-        polarProductId: "prod_growth_001",
-        polarPriceId: "price_growth_quarterly_001",
+        dodoProductId: "pdt_0Nf66BlvFMCRhaArH5ynI",
         name: "Growth Quarterly",
         description: "Growth-tier plan at quarterly billing with advanced reporting included",
         amount: 10799,
@@ -516,8 +515,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation"],
-        polarCustomerId: "cus_demo_acme_001",
-        polarSubscriptionId: "sub_demo_acme_001",
+        dodoCustomerId: "cus_demo_acme_001",
+        dodoSubscriptionId: "sub_demo_acme_001",
         createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 88 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -539,8 +538,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_apex_004",
-        polarSubscriptionId: "sub_demo_apex_004",
+        dodoCustomerId: "cus_demo_apex_004",
+        dodoSubscriptionId: "sub_demo_apex_004",
         createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 43 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
@@ -562,8 +561,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_growth_quarterly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions"],
-        polarCustomerId: "cus_demo_bharat_005",
-        polarSubscriptionId: "sub_demo_bharat_005",
+        dodoCustomerId: "cus_demo_bharat_005",
+        dodoSubscriptionId: "sub_demo_bharat_005",
         createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 118 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -585,8 +584,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation"],
-        polarCustomerId: "cus_demo_coastal_006",
-        polarSubscriptionId: "sub_demo_coastal_006",
+        dodoCustomerId: "cus_demo_coastal_006",
+        dodoSubscriptionId: "sub_demo_coastal_006",
         createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 58 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -608,8 +607,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation", "reporting"],
-        polarCustomerId: "cus_demo_nexgen_012",
-        polarSubscriptionId: "sub_demo_nexgen_012",
+        dodoCustomerId: "cus_demo_nexgen_012",
+        dodoSubscriptionId: "sub_demo_nexgen_012",
         createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 198 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
@@ -631,8 +630,8 @@ export function initializeDemoData(): void {
         status: "active",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_zephyr_017",
-        polarSubscriptionId: "sub_demo_zephyr_017",
+        dodoCustomerId: "cus_demo_zephyr_017",
+        dodoSubscriptionId: "sub_demo_zephyr_017",
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
@@ -656,8 +655,8 @@ export function initializeDemoData(): void {
         status: "renewal",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation"],
-        polarCustomerId: "cus_demo_oriental_018",
-        polarSubscriptionId: "sub_demo_oriental_018",
+        dodoCustomerId: "cus_demo_oriental_018",
+        dodoSubscriptionId: "sub_demo_oriental_018",
         createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 363 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -679,8 +678,8 @@ export function initializeDemoData(): void {
         status: "renewal",
         selectedPlanMappingId: "plan_growth_quarterly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions"],
-        polarCustomerId: "cus_demo_pioneer_019",
-        polarSubscriptionId: "sub_demo_pioneer_019",
+        dodoCustomerId: "cus_demo_pioneer_019",
+        dodoSubscriptionId: "sub_demo_pioneer_019",
         createdAt: new Date(Date.now() - 270 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 268 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
@@ -704,8 +703,8 @@ export function initializeDemoData(): void {
         status: "trial",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_deccan_007",
-        polarSubscriptionId: "sub_demo_deccan_007",
+        dodoCustomerId: "cus_demo_deccan_007",
+        dodoSubscriptionId: "sub_demo_deccan_007",
         createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
         trialEndsAt: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -728,8 +727,8 @@ export function initializeDemoData(): void {
         status: "trial",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable"],
-        polarCustomerId: "cus_demo_ecofresh_008",
-        polarSubscriptionId: "sub_demo_ecofresh_008",
+        dodoCustomerId: "cus_demo_ecofresh_008",
+        dodoSubscriptionId: "sub_demo_ecofresh_008",
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         trialEndsAt: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
@@ -752,8 +751,8 @@ export function initializeDemoData(): void {
         status: "trial",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_silver_014",
-        polarSubscriptionId: "sub_demo_silver_014",
+        dodoCustomerId: "cus_demo_silver_014",
+        dodoSubscriptionId: "sub_demo_silver_014",
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         trialEndsAt: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
@@ -778,8 +777,8 @@ export function initializeDemoData(): void {
         status: "payment_pending",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        checkoutUrl: "https://checkout.polar.sh/checkout/demo_techstart_001",
-        polarCustomerId: "cus_demo_techstart_002",
+        checkoutUrl: "https://checkout.dodopayments.com/session/demo_techstart_001",
+        dodoCustomerId: "cus_demo_techstart_002",
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         expectedBills: 50, expectedInvoices: 40, expectedStatements: 5,
         notes: "Payment link sent 5 days ago. Follow up needed.",
@@ -799,8 +798,8 @@ export function initializeDemoData(): void {
         status: "payment_pending",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions"],
-        checkoutUrl: "https://checkout.polar.sh/checkout/demo_prime_013",
-        polarCustomerId: "cus_demo_prime_013",
+        checkoutUrl: "https://checkout.dodopayments.com/session/demo_prime_013",
+        dodoCustomerId: "cus_demo_prime_013",
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         expectedBills: 250, expectedInvoices: 180, expectedStatements: 10,
         notes: "Just signed up. Checkout link shared. Awaiting payment.",
@@ -822,8 +821,8 @@ export function initializeDemoData(): void {
         status: "grace",
         selectedPlanMappingId: "plan_growth_quarterly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions"],
-        polarCustomerId: "cus_demo_global_003",
-        polarSubscriptionId: "sub_demo_global_003",
+        dodoCustomerId: "cus_demo_global_003",
+        dodoSubscriptionId: "sub_demo_global_003",
         createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 178 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -846,8 +845,8 @@ export function initializeDemoData(): void {
         status: "grace",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable", "transactions", "gst_reconciliation"],
-        polarCustomerId: "cus_demo_urban_015",
-        polarSubscriptionId: "sub_demo_urban_015",
+        dodoCustomerId: "cus_demo_urban_015",
+        dodoSubscriptionId: "sub_demo_urban_015",
         createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 148 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
@@ -872,8 +871,8 @@ export function initializeDemoData(): void {
         status: "frozen",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable"],
-        polarCustomerId: "cus_demo_fusion_009",
-        polarSubscriptionId: "sub_demo_fusion_009",
+        dodoCustomerId: "cus_demo_fusion_009",
+        dodoSubscriptionId: "sub_demo_fusion_009",
         createdAt: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 298 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -897,8 +896,8 @@ export function initializeDemoData(): void {
         status: "frozen",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_vertex_016",
-        polarSubscriptionId: "sub_demo_vertex_016",
+        dodoCustomerId: "cus_demo_vertex_016",
+        dodoSubscriptionId: "sub_demo_vertex_016",
         createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 88 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
@@ -924,8 +923,8 @@ export function initializeDemoData(): void {
         status: "inactive",
         selectedPlanMappingId: "plan_growth_monthly",
         purchasedModules: ["dashboard", "accounts_payable", "accounts_receivable"],
-        polarCustomerId: "cus_demo_helios_010",
-        polarSubscriptionId: "sub_demo_helios_010",
+        dodoCustomerId: "cus_demo_helios_010",
+        dodoSubscriptionId: "sub_demo_helios_010",
         createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
         activatedAt: new Date(Date.now() - 363 * 24 * 60 * 60 * 1000).toISOString(),
         renewalDueDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
@@ -949,7 +948,7 @@ export function initializeDemoData(): void {
         status: "draft",
         selectedPlanMappingId: "plan_starter_monthly",
         purchasedModules: ["dashboard"],
-        polarCustomerId: "cus_demo_jupiter_011",
+        dodoCustomerId: "cus_demo_jupiter_011",
         createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         expectedBills: 30, expectedInvoices: 20, expectedStatements: 1,
         notes: "BD created profile. Needs CS to review and activate.",

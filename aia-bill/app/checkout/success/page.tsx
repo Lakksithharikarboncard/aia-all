@@ -8,9 +8,10 @@ export const metadata = {
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout_id?: string }>;
+  searchParams: Promise<{ customerId?: string }>;
 }) {
-  const { checkout_id } = await searchParams;
+  const { customerId } = await searchParams;
+  const portalHref = customerId ? `/portal/${customerId}` : "/";
 
   return (
     <div className="min-h-screen bg-[#f6f8fa] flex items-center justify-center px-4">
@@ -19,18 +20,17 @@ export default async function CheckoutSuccessPage({
           <CheckCircle2 className="w-8 h-8 text-[#1a7f37]" />
         </div>
         <h1 className="text-xl font-bold text-[#1f2328] mb-3">Payment Complete!</h1>
-        <p className="text-[#656d76] mb-6">
-          Your account is being activated. You&apos;ll have full access to your modules shortly.
+        <p className="text-[#656d76] mb-2">
+          Your subscription is now active. You have full access to your modules.
         </p>
-        {checkout_id && (
-          <p className="text-xs text-[#8b949e] mb-6 break-all">
-          </p>
-        )}
+        <p className="text-xs text-[#8b949e] mb-8">
+          It may take a few seconds for your account status to update.
+        </p>
         <Link
-          href="/"
+          href={portalHref}
           className="inline-flex items-center justify-center rounded-md bg-[#2da44e] text-white px-6 py-2.5 text-sm font-medium hover:bg-[#2c974b] transition-colors border border-[#1b7c37] shadow-[0_1px_0_rgba(31,35,40,0.04)]"
         >
-          Go to Dashboard
+          Go to My Portal
         </Link>
       </div>
     </div>

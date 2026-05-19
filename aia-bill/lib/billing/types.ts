@@ -1,6 +1,5 @@
 export type AccountStatus = "lead" | "draft" | "trial" | "payment_pending" | "active" | "renewal" | "grace" | "frozen" | "inactive";
 
-// Module IDs — expand to include reporting and tally_zoho
 export type ModuleId =
   | "dashboard"
   | "accounts_payable"
@@ -8,6 +7,7 @@ export type ModuleId =
   | "transactions"
   | "gst_reconciliation"
   | "reporting"
+  | "journal_voucher"
   | "tally_zoho";
 
 export type Module = {
@@ -35,11 +35,10 @@ export type Lead = {
   createdAt: string;
 };
 
-// PlanMapping — links Polar plan to AIA module access
+// PlanMapping — links Dodo Payments product to AIA module access
 export type PlanMapping = {
   id: string;
-  polarProductId: string;
-  polarPriceId: string;
+  dodoProductId?: string;
   name: string;
   description?: string;
   amount: number;
@@ -61,6 +60,7 @@ export type CustomerAccount = {
   primaryName: string;
   primaryEmail: string;
   primaryPhone: string;
+  secondaryEmail?: string;
   // Billing contact
   billingName: string;
   billingEmail: string;
@@ -78,9 +78,9 @@ export type CustomerAccount = {
   packageBillingFrequency?: "monthly" | "quarterly" | "annual";
   packageModules?: ModuleId[];
   customPackageReason?: string;
-  // Polar integration
-  polarCustomerId?: string;
-  polarSubscriptionId?: string;
+  // Dodo Payments integration
+  dodoCustomerId?: string;
+  dodoSubscriptionId?: string;
   checkoutUrl?: string;
   signupInviteUrl?: string;
   // Dates
@@ -91,10 +91,11 @@ export type CustomerAccount = {
   renewalDueDate?: string;
   graceEndsAt?: string;
   frozenAt?: string;
-  // Volume context (for reference only, not enforced)
+  // Volume & needs context (reference only)
   expectedBills?: number;
   expectedInvoices?: number;
   expectedStatements?: number;
+  accountingSoftware?: Array<"tally" | "zoho" | "excel" | "other">;
   startDate?: string;
   previousStatusBeforeFreeze?: AccountStatus;
   // Source
@@ -136,7 +137,7 @@ export type CalculatorInput = {
   billsPerMonth: number;
   invoicesPerMonth: number;
   statementsPerMonth: number;
-  accountingSoftware: "tally" | "zoho" | "excel" | "other";
+  accountingSoftware: Array<"tally" | "zoho" | "excel" | "other">;
   gstNeeded: boolean;
   requiredModules: ModuleId[];
   billingFrequency: "monthly" | "quarterly" | "annual";
@@ -154,13 +155,23 @@ export type CalculatorResult = {
   reason: string[];
 };
 
-// MODULES constant
 export const MODULES: Module[] = [
-  { id: "dashboard", name: "Dashboard", description: "Main dashboard view" },
-  { id: "accounts_payable", name: "Accounts Payable", description: "Upload and process bills" },
+  { id: "transactions", name: "Banking", description: "Bank statement processing and reconciliation" },
   { id: "accounts_receivable", name: "Accounts Receivable", description: "Upload and process invoices" },
-  { id: "transactions", name: "Bank Statements", description: "Analyze bank statements" },
-  { id: "gst_reconciliation", name: "GST Reconciliation", description: "GSTR-2B reconciliation" },
+  { id: "accounts_payable", name: "Accounts Payable", description: "Upload and process bills" },
+  { id: "journal_voucher", name: "Journal Voucher", description: "Journal entry management" },
+  { id: "dashboard", name: "Dashboard & Reports", description: "Main dashboard and advanced analytics" },
   { id: "reporting", name: "Reporting", description: "Advanced reports and analytics" },
+  { id: "gst_reconciliation", name: "GSTR-2B Recon", description: "GSTR-2B reconciliation" },
   { id: "tally_zoho", name: "Tally / Zoho Integration", description: "Sync with accounting software" },
+];
+
+// Modules shown as checkboxes in customer needs (tally_zoho is always included)
+export const SELECTABLE_MODULES: ModuleId[] = [
+  "transactions",
+  "accounts_receivable",
+  "accounts_payable",
+  "journal_voucher",
+  "dashboard",
+  "gst_reconciliation",
 ];

@@ -33,17 +33,18 @@ export function InfoRow({ label, value, mono, full }: InfoRowProps) {
 interface InfoGridProps {
   title: string;
   children: React.ReactNode;
-  /** When true, children render in a 2-column grid (default: true). */
   columns?: boolean;
+  action?: React.ReactNode;
 }
 
-export function InfoGrid({ title, children, columns = true }: InfoGridProps) {
+export function InfoGrid({ title, children, columns = true, action }: InfoGridProps) {
   return (
     <section className="bg-white rounded-[3px] border border-border-default">
-      <header className="px-5 py-3 border-b border-border-divider">
+      <header className="px-5 py-3 border-b border-border-divider flex items-center justify-between">
         <h3 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
           {title}
         </h3>
+        {action}
       </header>
       <div className={cn("p-5", columns ? "grid grid-cols-2 gap-x-6 gap-y-4" : "space-y-4")}>
         {children}

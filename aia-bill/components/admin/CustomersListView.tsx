@@ -46,7 +46,7 @@ export function CustomersListView({
       const matchSearch =
         c.companyName.toLowerCase().includes(search.toLowerCase()) ||
         c.primaryName.toLowerCase().includes(search.toLowerCase()) ||
-        (c.polarCustomerId ?? "").toLowerCase().includes(search.toLowerCase());
+        (c.dodoCustomerId ?? "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || c.status === statusFilter;
       return matchSearch && matchStatus;
     });
