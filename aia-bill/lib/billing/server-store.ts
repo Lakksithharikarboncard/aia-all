@@ -13,9 +13,7 @@ import type {
 const DATA_DIR = path.resolve(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "billing.json");
 
-function ensureDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+const EMPTY: BillingData = { customers: [], leads: [], planMappings: [], upgradeRequests: [], auditLog: [] };
 
 export type BillingData = {
   customers: CustomerAccount[];
@@ -26,21 +24,20 @@ export type BillingData = {
 };
 
 function readData(): BillingData {
-  ensureDir();
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
     return JSON.parse(raw) as BillingData;
   } catch {
-    return { customers: [], leads: [], planMappings: [], upgradeRequests: [], auditLog: [] };
+    return { ...EMPTY };
   }
 }
 
 function writeData(data: BillingData): void {
   try {
-    ensureDir();
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch {
-    // Read-only filesystem (Vercel serverless) — state held in memory for this invocation only
+    // Read-only filesystem (Vercel serverless) — writes are no-ops; reads still work from last state
   }
 }
 

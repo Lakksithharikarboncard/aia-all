@@ -23,6 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="min-h-screen">
       <head />
       <body
+        suppressHydrationWarning
         className={`${inter.variable} m-0 min-h-screen font-sans antialiased`}
       >
         <ToastProvider>{children}</ToastProvider>

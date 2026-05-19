@@ -70,8 +70,9 @@ export function AdminDashboard({ tab, onTabChange }: AdminDashboardProps) {
   };
 
   if (!isClient) {
+    // Return null on server — client takes over after hydration to avoid mismatch
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" suppressHydrationWarning>
         <div className="flex items-center gap-3 rounded-full border border-border-default bg-white px-5 py-3">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-action-primary border-t-transparent" />
           <span className="text-sm font-medium text-text-secondary">Loading...</span>
