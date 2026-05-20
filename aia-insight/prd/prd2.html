@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Accountant AI Insights PRD</title>
+<style>
+  :root {
+    --ink:        #1b1f24;
+    --muted:      #5b6470;
+    --line:       #e3e6ea;
+    --line-soft:  #eef0f2;
+    --bg-page:    #fafafa;
+    --bg-paper:   #ffffff;
+    --bg-flow:    #0f1115;
+    --flow-ink:   #d7dbe0;
+    --flow-key:   #9ecbff;
+    --flow-rule:  #2a2f37;
+    --bg-table-h: #f4f5f7;
+    --accent:     #2563eb;
+    --critical:   #dc2626;
+    --watch:      #d97706;
+    --positive:   #16a34a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-page); color: var(--ink); }
+  body { font-family: "Calibri", "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 11pt; line-height: 1.6; }
+  .paper { max-width: 8.5in; margin: 32px auto; padding: 1in 1in 1.1in; background: var(--bg-paper); border: 1px solid var(--line); text-align: justify; }
+  h1 { font-size: 18pt; font-weight: 700; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line-soft); text-align: left; }
+  h2 { font-size: 13pt; font-weight: 700; margin: 24px 0 10px; color: var(--ink); text-align: left; }
+  h3 { font-size: 11pt; font-weight: 700; margin: 18px 0 6px; text-align: left; }
+  h4 { font-size: 10.5pt; font-weight: 600; margin: 14px 0 6px; text-align: left; }
+  p { margin: 0 0 10px; }
+  strong { font-weight: 700; }
+  hr { border: 0; border-top: 1px solid var(--line-soft); margin: 24px 0; }
+  ul { margin: 4px 0 14px; padding-left: 22px; }
+  ul li { margin: 3px 0; }
+  ol { margin: 4px 0 14px; padding-left: 22px; }
+  ol li { margin: 3px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: 10.5pt; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; vertical-align: top; text-align: left; }
+  thead th { background: var(--bg-table-h); font-weight: 700; font-size: 10pt; }
+  pre { background: var(--bg-flow); color: var(--flow-ink); border: 1px solid var(--flow-rule); border-left: 3px solid var(--flow-key); padding: 10px 14px; margin: 8px 0 14px; font-family: "JetBrains Mono", "Consolas", monospace; font-size: 8pt; line-height: 1.45; overflow-x: auto; }
+  code { font-family: "JetBrains Mono", "Consolas", monospace; font-size: 8.5pt; background: var(--bg-table-h); padding: 1px 4px; border-radius: 3px; }
+  pre code { background: none; padding: 0; border-radius: 0; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 8.5pt; font-weight: 600; }
+  .tag-crit { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+  .tag-watch { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .tag-pos { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .tag-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .callout { padding: 10px 14px; margin: 8px 0 14px; border-radius: 6px; border-left: 4px solid; font-size: 10.5pt; }
+  .callout-info { background: #eff6ff; border-color: var(--accent); }
+  .callout-warn { background: #fffbeb; border-color: var(--watch); }
+  .callout-crit { background: #fef2f2; border-color: var(--critical); }
+  .meta { font-size: 9.5pt; color: var(--muted); margin: 4px 0 14px; }
+  .ref-links { font-size: 9.5pt; margin: 6px 0 0; text-align: left; }
+  .ref-links a { color: var(--accent); text-decoration: none; }
+  .ref-links a:hover { text-decoration: underline; }
+  .ref-links .sep { color: var(--line); margin: 0 10px; }
+  .flow-tree { font-family: "JetBrains Mono", "Consolas", monospace; font-size: 9pt; line-height: 1.8; background: var(--bg-flow); color: var(--flow-ink); border: 1px solid var(--flow-rule); border-left: 3px solid var(--flow-key); padding: 14px 18px; margin: 10px 0 18px; border-radius: 4px; }
+  .flow-tree .hl { color: #9ecbff; }
+  .flow-tree .ok { color: #4ade80; }
+  .flow-tree .ko { color: #f87171; }
+  .flow-tree .br { color: #2a2f37; }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  @media print { html, body { background: #fff; } .paper { margin: 0; border: 0; padding: 0.85in 0.85in 1in; } }
+</style>
+</head>
+<body>
+<main class="paper">
+
+<h1>AI Accountant AI Insights PRD</h1>
+
+<p class="meta"><strong>Status:</strong> Draft &nbsp;|&nbsp; <strong>Updated:</strong> 13 May 2026</p>
+
+<p class="ref-links">
+  <strong>Prototype:</strong> <a href="https://aia-dashboard-whg6.vercel.app/" target="_blank">aia-dashboard-whg6.vercel.app</a>
+  <span class="sep">|</span>
+  <strong>System prompt:</strong> <a href="https://www.verybin.com/?a33f5769a037aedb#CqKkAhkTk9WxguMVaBvjkd8vC7qQLukgagU+1HlGkaI=" target="_blank">verybin.com</a>
+</p>
+
+<hr />
+
+<h2>Problem</h2>
+
+<p>The AIA Dashboard has two tabs. Overview shows one set of numbers. Receivables and Payables sit together in another tab. Charts and data are everywhere, but nowhere does it tell you what it all means. You have to jump between tabs and piece things together in your head to figure out what is wrong, what is unusual, and what needs attention first. That takes effort. And it makes the tool feel slow.</p>
+
+<p>The problem: <strong>the data is there, but its meaning is not.</strong></p>
+
+<hr />
+
+<h2>Proposed Solution</h2>
+
+<p>Launch AI Insights (BETA) as a compact advisory module on the Dashboard Overview tab. It reads data from charts already on the dashboard and surfaces the most important signals.</p>
+
+<p><strong>Data sources (existing dashboard charts):</strong></p>
+
+<table>
+<thead>
+<tr><th>Overview Tab</th><th>Receivables &amp; Payables Tab</th></tr>
+</thead>
+<tbody>
+<tr><td>Gross Profit</td><td>AR Outstanding</td></tr>
+<tr><td>Cash Balance</td><td>DSO</td></tr>
+<tr><td>Revenue vs Expense</td><td>AR Aging</td></tr>
+<tr><td>P&amp;L Summary Bridge</td><td>AP Outstanding</td></tr>
+<tr><td>Cash Inflow vs Outflow</td><td>DPO</td></tr>
+<tr><td>Expense Breakdown</td><td>AP Aging</td></tr>
+<tr><td>Revenue Trend</td><td>Upcoming Payments</td></tr>
+<tr><td>Top Customers by Revenue</td><td>Vendor Spend Concentration</td></tr>
+</tbody>
+</table>
+
+<p><strong>How insights work:</strong></p>
+<ul>
+  <li>Every insight is backed by real numbers from your data, not guesses</li>
+  <li>Insights are ordered by how serious, how big, and how recent the signal is</li>
+  <li>No generic advice. Every insight is specific to your business</li>
+  <li>Each insight shows what area it came from (Overview or Receivables+Payables)</li>
+  <li>All content is checked against fixed rules before it shows up on screen</li>
+</ul>
+
+<h3>Flow</h3>
+
+<div class="flow-tree">
+  <div class="hl">Raw Financial Data</div>
+  <div class="br" style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">|</div>
+  <div style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">+-- AI reads &amp; identifies signals</div>
+  <div class="br" style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">|</div>
+  <div style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">+-- Generates 3 to 5 insight cards</div>
+  <div class="br" style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">|</div>
+  <div style="padding-left: 24px; border-left: 1px solid #2a2f37; margin-left: 6px;">+-- Validation pipeline checks each card</div>
+  <div style="padding-left: 48px; border-left: 1px solid #2a2f37; margin-left: 6px;">|</div>
+  <div style="padding-left: 48px; border-left: 1px solid #2a2f37; margin-left: 6px;">+-- <span class="ok">Passes</span> &gt; Cached &amp; served to dashboard</div>
+  <div style="padding-left: 48px; border-left: 1px solid #2a2f37; margin-left: 6px;">|</div>
+  <div style="padding-left: 48px; margin-left: 6px;">+-- <span class="ko">Fails</span> &gt; Suppressed, logged</div>
+  <div style="padding-left: 24px; margin-left: 6px;">|</div>
+  <div style="padding-left: 24px; margin-left: 6px;">+-- User sees on Overview tab</div>
+  <div style="padding-left: 24px; margin-left: 6px;">|</div>
+  <div style="padding-left: 24px; margin-left: 6px;">+-- User marks Helpful / Not helpful</div>
+  <div style="padding-left: 24px; margin-left: 6px;">&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+  <div style="padding-left: 24px; margin-left: 6px;">&nbsp;&nbsp;&nbsp;&nbsp;+-- Logged for improvement</div>
+</div>
+
+<hr />
+
+<h2>Objectives</h2>
+
+<p>AI Insights helps business owners and finance professionals answer three questions in under 30 seconds:</p>
+
+<ol>
+  <li><strong>What is the most important signal in my numbers right now?</strong></li>
+  <li><strong>Why does it matter to the business?</strong></li>
+  <li><strong>Which metric or chart should I look at next?</strong></li>
+</ol>
+
+<hr />
+
+<h2>Feature Requirements</h2>
+
+<h3>Placement and Behaviour</h3>
+<ul>
+  <li>AI Insights lives only on the Dashboard Overview tab, below the top KPI cards and above the secondary charts.</li>
+  <li>Three insights show by default. Users can click "Show more" to see up to five.</li>
+  <li>Uses a compact accordion. All rows start collapsed. Only one insight can be open at a time.</li>
+</ul>
+
+<h3>Card Structure</h3>
+
+<table>
+<thead>
+<tr><th>Element</th><th style="width: 37%;">Collapsed</th><th style="width: 38%;">Expanded</th></tr>
+</thead>
+<tbody>
+<tr><td>Severity</td><td>Badge (Critical / Watch / Positive)</td><td>Same badge remains visible</td></tr>
+<tr><td>Title</td><td>6 to 10 words, specific to the company</td><td>Same title stays on top</td></tr>
+<tr><td>Source</td><td>Badge (Overview or Receivables+Payables)</td><td>Same badge remains visible</td></tr>
+<tr><td>Summary</td><td>One line with a number, direction, and period</td><td>Hidden (replaced by detail)</td></tr>
+<tr><td>What we found</td><td>Not visible</td><td>Exact metric with baseline and period</td></tr>
+<tr><td>Why it matters</td><td>Not visible</td><td>One sentence on business impact</td></tr>
+<tr><td>Suggested review</td><td>Not visible</td><td>Practical next step, no workflow ties</td></tr>
+<tr><td>Based on</td><td>Not visible</td><td>Source metrics and time period</td></tr>
+<tr><td>Feedback</td><td>Not visible</td><td>Helpful / Not helpful buttons</td></tr>
+<tr><td>Expand control</td><td>Chevron icon</td><td>Chevron rotates to collapse</td></tr>
+</tbody>
+</table>
+
+<h3>Feedback on Insights</h3>
+<ul>
+  <li>Each expanded card shows "Helpful" and "Not helpful" buttons.</li>
+  <li>If a user clicks "Not helpful", they can pick a reason: too generic, not accurate, already knew this, or hard to understand.</li>
+  <li>Feedback improves detection rules, copy quality, and helps track module usefulness over time.</li>
+</ul>
+
+<h3>Feed States</h3>
+
+<table>
+<thead>
+<tr><th>Situation</th><th>What the user sees</th></tr>
+</thead>
+<tbody>
+<tr><td>Insights available</td><td>3 to 5 ranked insight cards</td></tr>
+<tr><td>No material signals</td><td>"No material financial changes detected from current dashboard data."</td></tr>
+<tr><td>Not enough history</td><td>"Insights will appear once sufficient historical data is available for comparison."</td></tr>
+<tr><td>Stale or incomplete data</td><td>"Insights paused: dashboard data is not fully updated. Please refresh."</td></tr>
+</tbody>
+</table>
+
+<h3>Refresh Behaviour</h3>
+
+<div class="callout callout-info">
+  <strong>Refresh is event-driven, not time-driven.</strong> Insights refresh automatically when the user opens the dashboard, or when a relevant financial event occurs &mdash; such as uploading a bill, invoice, or transaction statement. This ensures the user always sees the most current signals without waiting for a fixed interval.
+</div>
+
+<h3>Insight Types</h3>
+
+<h4>Anomaly insights (single period)</h4>
+<p>These catch things that changed a lot in one month.</p>
+
+<table>
+<thead>
+<tr><th style="width: 30%;">Insight</th><th>What it means</th></tr>
+</thead>
+<tbody>
+<tr><td>Expense spike</td><td>Operating expenses jump beyond normal</td></tr>
+<tr><td>Overdue receivables spike</td><td>Customers suddenly owe more money</td></tr>
+<tr><td>Overdue payables spike</td><td>Pending bills shoot up</td></tr>
+<tr><td>Liquidity drop</td><td>Cash or runway shrinks fast</td></tr>
+<tr><td>Profitability drop</td><td>Net profit falls or turns negative</td></tr>
+<tr><td>Margin compression</td><td>Gross profit margin shrinks</td></tr>
+</tbody>
+</table>
+
+<h4>Pattern insights (multi period, 3+ months)</h4>
+<p>These spot trends that have been building over time.</p>
+
+<table>
+<thead>
+<tr><th style="width: 30%;">Insight</th><th>What it means</th></tr>
+</thead>
+<tbody>
+<tr><td>Repeated losses</td><td>Business has been losing money for 3+ months</td></tr>
+<tr><td>Receivables worsening</td><td>Outstanding money keeps growing month after month</td></tr>
+<tr><td>Payables pressure building</td><td>Pending bills keep rising</td></tr>
+<tr><td>Improving margin trend</td><td>Gross profit margin is steadily getting better</td></tr>
+<tr><td>Collections deteriorating</td><td>Customers are taking longer to pay</td></tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2>AI Capabilities</h2>
+
+<h3>What the AI does</h3>
+<ul>
+  <li>Reads the complete raw financial data (not just pre-computed charts or aggregates) and identifies meaningful signals</li>
+  <li>Generates plain English insight cards with exact numbers, comparisons, and time periods</li>
+  <li>Writes in simple business language, avoiding accounting jargon like DSO, DPO, or AR</li>
+  <li>Uses soft language ("may indicate", "suggests", "is worth reviewing") instead of hard claims</li>
+  <li>Outputs a structured JSON object that the system can validate before displaying</li>
+</ul>
+
+<h3>What the AI does not do</h3>
+<ul>
+  <li>It does not decide severity or materiality thresholds (those are rule based)</li>
+  <li>It does not invent numbers, causes, benchmarks, or predictions</li>
+  <li>It does not trigger any automated actions or workflows</li>
+  <li>It does not replace professional accounting judgment</li>
+</ul>
+
+<h3>Principle</h3>
+<p>The AI reads the raw data and surfaces what matters. Fixed rules validate the output before anyone sees it. Charts on the dashboard show aggregated views of the same raw data.</p>
+
+<h2>User Stories</h2>
+
+<table>
+<thead>
+<tr><th style="width: 22%;">Persona</th><th>Story</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Business owner</strong></td><td>As a business owner, I want to open the dashboard and instantly see what needs my attention, so I do not have to dig through charts myself.</td></tr>
+<tr><td><strong>Business owner</strong></td><td>As a business owner, I want each insight to tell me why it matters in plain language, so I understand the impact without an accounting degree.</td></tr>
+<tr><td><strong>Business owner</strong></td><td>As a business owner, I want to know which specific number or chart to look at next, so I can verify the signal myself.</td></tr>
+<tr><td><strong>Business owner</strong></td><td>As a business owner, I want to see positive signals too, not just problems, so I know what is going well.</td></tr>
+<tr><td><strong>CA / Finance pro</strong></td><td>As a CA, I want every insight to cite exact numbers from the dashboard, so I can trust it and trace it back to the source.</td></tr>
+<tr><td><strong>CA / Finance pro</strong></td><td>As a CA, I want insights ranked by severity and size, so I can prioritise what to work on first.</td></tr>
+<tr><td><strong>CA / Finance pro</strong></td><td>As a CA, I want to mark insights as helpful or not, so the system gets better over time.</td></tr>
+<tr><td><strong>General</strong></td><td>As a user, I want the module to load fast and never break the rest of the dashboard, so I can keep working even if insights fail.</td></tr>
+<tr><td><strong>General</strong></td><td>As a user, I want to expand one insight at a time to read details, without losing the overview of other signals.</td></tr>
+<tr><td><strong>General</strong></td><td>As a user, I want to see when the insights were last updated, so I know the data is fresh.</td></tr>
+<tr><td><strong>General</strong></td><td>As a user, I want insights to refresh automatically when I open the dashboard or upload new financial documents, so I always see the latest signals without waiting.</td></tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2>TL;DR</h2>
+
+<p>AI Insights is a compact module on the Dashboard Overview tab. It reads raw financial data, picks out what is important, and writes 3 to 5 plain English cards explaining what changed, why it matters, and what to look at next. Cards show severity (Critical, Watch, Positive), cite exact numbers, and include feedback buttons. The system validates all output before display. No generic advice, no automation, no predictions. Ships as BETA on the Overview tab only.</p>
+
+</main>
+</body>
+</html>
