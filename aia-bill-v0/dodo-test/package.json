@@ -1,0 +1,14 @@
+{
+  "name": "dodo-test",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "portal": "node scripts/portal.js",
+    "list-customers": "node scripts/list-customers.js",
+    "list-products": "node scripts/list-products.js"
+  },
+  "dependencies": {
+    "dodopayments": "^1.0.0",
+    "dotenv": "^17.4.2"
+  }
+}

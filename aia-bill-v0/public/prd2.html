@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Accountant Billing &amp; Access PRD</title>
+<style>
+  :root {
+    --ink:        #1b1f24;
+    --muted:      #5b6470;
+    --line:       #e3e6ea;
+    --line-soft:  #eef0f2;
+    --bg-page:    #fafafa;
+    --bg-paper:   #ffffff;
+    --bg-flow:    #0f1115;
+    --flow-ink:   #d7dbe0;
+    --flow-key:   #9ecbff;
+    --flow-arrow: #7e8590;
+    --flow-rule:  #2a2f37;
+    --bg-table-h: #f4f5f7;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; background: var(--bg-page); color: var(--ink); }
+  body {
+    font-family: "Calibri", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Paper (flat) ── */
+  .paper {
+    max-width: 8.5in;
+    margin: 32px auto;
+    padding: 1in 1in 1.1in 1in;
+    background: var(--bg-paper);
+    border: 1px solid var(--line);
+  }
+
+  /* ── Title block ── */
+  .title {
+    font-size: 26pt;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    line-height: 1.15;
+  }
+  .subtitle {
+    font-size: 11pt;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .meta {
+    font-size: 9.5pt;
+    color: var(--muted);
+    margin: 0 0 28px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .meta span strong { color: var(--ink); font-weight: 600; }
+
+  /* ── Headings ── */
+  h1 {
+    font-size: 18pt;
+    font-weight: 700;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line-soft);
+    line-height: 1.25;
+  }
+  h2 {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 22px 0 8px;
+    line-height: 1.3;
+  }
+  h3 {
+    font-size: 11pt;
+    font-weight: 700;
+    margin: 16px 0 4px;
+  }
+  p { margin: 0 0 10px; text-align: justify; hyphens: auto; }
+
+  /* ── Inline mechanics ── */
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--line-soft);
+    margin: 22px 0;
+  }
+
+  /* ── Bullets ── */
+  ul {
+    margin: 4px 0 12px;
+    padding-left: 22px;
+  }
+  ul li {
+    margin: 2px 0;
+    padding-left: 2px;
+  }
+  ul li::marker { color: var(--muted); }
+
+  /* ── Tables ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 16px;
+    font-size: 10.5pt;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+    vertical-align: top;
+    text-align: left;
+  }
+  thead th {
+    background: var(--bg-table-h);
+    font-weight: 700;
+    font-size: 10pt;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+  tbody td:first-child {
+    font-weight: 600;
+    color: var(--ink);
+    width: 30%;
+    white-space: nowrap;
+  }
+
+  /* ── ASCII flow code (dark, highlighted) ── */
+  pre.flow {
+    background: var(--bg-flow);
+    color: var(--flow-ink);
+    border: 1px solid var(--flow-rule);
+    border-left: 3px solid var(--flow-key);
+    border-radius: 2px;
+    padding: 10px 14px;
+    margin: 8px 0 14px;
+    font-family: "JetBrains Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+    font-size: 8pt;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    white-space: pre;
+    overflow-x: auto;
+    text-align: left;
+  }
+  pre.flow b      { color: var(--flow-key); font-weight: 600; }
+  pre.flow i      { color: var(--flow-arrow); font-style: normal; }
+  pre.flow .arrow { color: var(--flow-arrow); }
+  pre.flow .key   { color: var(--flow-key); font-weight: 600; }
+  pre.flow .verb  { color: #f0c674; }
+  pre.flow .ok    { color: #b5cea8; }
+
+  /* ── Callouts ── */
+  .label-line {
+    font-weight: 700;
+    margin: 14px 0 4px;
+  }
+
+  /* ── Print ── */
+  @media print {
+    html, body { background: #fff; }
+    .paper {
+      margin: 0;
+      border: 0;
+      box-shadow: none;
+      padding: 0.85in 0.85in 1in;
+    }
+    h1 { break-after: avoid; }
+    h2, h3 { break-after: avoid; }
+    pre.flow, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main class="paper">
+
+  <p class="title">AI Accountant Billing &amp; Access PRD</p>
+  <p class="subtitle">AI Accountant · Billing and Access Control Module</p>
+  <div class="meta">
+    <span><strong>Status:</strong> Draft</span>
+    <span><strong>Updated:</strong> 19 May 2026</span>
+  </div>
+
+  <!-- ── Problem Statement ── -->
+  <h1>Problem Statement</h1>
+  <p>
+    AIA automates financial document processing for Indian SMBs: Accounts Payable, Accounts Receivable,
+    Bank Statements, GST Reconciliation, Reporting, and Tally / Zoho integration.
+  </p>
+  <p>
+    Every customer today goes through a sales conversation before they can use the product.
+    That's intentional. What's not intentional is everything that happens after the deal closes.
+  </p>
+  <p>There is no billing module.</p>
+  <ul>
+    <li>Customers don't know what plan they're on.</li>
+    <li>Customers don't know what they've paid for or when it renews.</li>
+    <li>The team has no single place to activate a customer, assign modules, or track payment.</li>
+    <li>Access is enabled manually, after someone confirms payment over chat.</li>
+    <li>Renewals are followed up by hand.</li>
+  </ul>
+  <p>The product works. The commercial layer around it doesn't exist yet.</p>
+
+  <!-- ── Customer Lifecycle ── -->
+  <h1>Customer Lifecycle</h1>
+  <p>The complete journey a customer goes through, from demo to offboarding. Status is set automatically by Dodo Payments via webhooks. The only manual status intervention available to CS is Freeze and Unfreeze.</p>
+
+  <table>
+    <thead><tr><th>Stage</th><th>What it means</th><th>Set by</th></tr></thead>
+    <tbody>
+      <tr><td>Draft</td><td>Growth team has created the customer record and assigned a plan. Checkout not yet generated.</td><td>Growth / CS on create</td></tr>
+      <tr><td>Payment Pending</td><td>Dodo checkout session generated and shared with the customer. Waiting for first payment.</td><td>Checkout creation</td></tr>
+      <tr><td>Trial</td><td>14-day trial. Signup invite generated. Modules unlocked immediately.</td><td>Growth / CS on create</td></tr>
+      <tr><td>Active</td><td>Payment received. Selected modules unlocked. Billing cycle running with a renewal date.</td><td>Dodo: subscription.active</td></tr>
+      <tr><td>Renewal</td><td>Billing date is approaching. Informational only — Dodo handles the charge automatically.</td><td>CS (manual edge case)</td></tr>
+      <tr><td>Grace</td><td>Payment failed. Access is retained for up to 10 days while the customer settles payment.</td><td>Dodo: subscription.on_hold / subscription.failed</td></tr>
+      <tr><td>Frozen</td><td>Access suspended. Either Dodo expired the subscription after grace, or CS manually froze the account for compliance or fraud reasons.</td><td>Dodo: subscription.expired · CS: Freeze action</td></tr>
+      <tr><td>Inactive</td><td>Subscription cancelled. Account deactivated. Customer can no longer access the product.</td><td>Dodo: subscription.cancelled</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── High-Level Approach & Goals ── -->
+  <h1>High-Level Approach &amp; Goals</h1>
+  <p>This is not a self-serve billing system. AIA is sold through demos and that stays the same.</p>
+  <p>
+    What we're building is a control layer, a thin module that connects a closed deal to
+    an active, paying customer without manual coordination.
+  </p>
+  <p>The split is simple:</p>
+  <ul>
+    <li>Dodo Payments handles money: checkout, payments, subscriptions, invoices, renewals</li>
+    <li>AIA handles access: which customer is active, which modules they can use</li>
+  </ul>
+
+  <p class="label-line">Goals</p>
+  <table>
+    <thead><tr><th>Goal</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>One place to activate a customer</td>
+          <td>Growth team creates the customer, picks a plan from the catalogue or creates one on the spot, sends a payment link or trial — in one flow. Plan creation syncs to Dodo automatically.</td></tr>
+      <tr><td>One place to see what's owed</td>
+          <td>Overview surfaces trials ending, renewals due, payment pending, grace, and frozen accounts</td></tr>
+      <tr><td>One place for the customer</td>
+          <td>Customer sees their plan, status, modules, renewal date, and a link to manage billing. Portal auto-syncs from Dodo on load — no manual refresh needed after payment.</td></tr>
+      <tr><td>Audit everything</td>
+          <td>Every status, plan, and module change is logged with actor and reason. Dodo webhook events are also logged.</td></tr>
+      <tr><td>No drift between AIA and Dodo</td>
+          <td>Dodo webhooks update account status automatically. Portal resyncs from Dodo on load when status is payment pending. CS can trigger a manual resync at any time.</td></tr>
+      <tr><td>Status is owned by Dodo, not CS</td>
+          <td>Account status moves automatically with payment events. The only manual override is Freeze / Unfreeze, which requires a typed reason and is logged.</td></tr>
+      <tr><td>Auth restricts access to the team</td>
+          <td>Admin portal requires a @karboncard.com email. OTP-based, 8-hour session. Customer portal is public — no login required.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="label-line">What this is not</p>
+  <p>
+    No self-serve signup. No public pricing page. No free trial without Growth approval. No automated
+    pricing recommendation — Growth picks the plan. No token tracking. No usage-based billing. Those come later.
+  </p>
+
+  <!-- ── Solution & Key Features ── -->
+  <h1>Solution &amp; Key Features</h1>
+  <p>
+    One module. Two surfaces: an admin side for Growth and CS, and a customer side for the end user.
+  </p>
+  <p>
+    Growth owns the demo and first payment. Once payment lands, the account hands off to CS for
+    ongoing management: renewals, exceptions, module changes, and everything else.
+  </p>
+
+  <p class="label-line">Growth / BD</p>
+  <table>
+    <thead><tr><th>Feature</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Create Customer</td><td>Full intake form: company, contacts, ownership, customer needs (volume, accounting software, modules, start date). Growth picks the plan directly from the catalogue — no automated recommendation.</td></tr>
+      <tr><td>Create Plan on the spot</td><td>If no suitable plan exists, Growth creates one from the same screen. The plan syncs to Dodo Payments automatically and is immediately selectable.</td></tr>
+      <tr><td>Packages catalogue</td><td>Manage reusable plans. Each plan links a Dodo Payments product to a set of AIA modules. Saving a new plan creates the Dodo product live.</td></tr>
+      <tr><td>Activation modes</td><td>Send payment link (Dodo checkout session) or 14-day trial with signup invite.</td></tr>
+      <tr><td>Send to customer</td><td>One-click email or copy-paste the link into any channel.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="label-line">CS / Admin</p>
+  <table>
+    <thead><tr><th>Feature</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Overview</td><td>Stat cards by status (Active, Trial, Grace, Frozen, Payment Pending). Click any card to filter the customer list to that status.</td></tr>
+      <tr><td>Customers list</td><td>Search, filter by status, sort, paginate.</td></tr>
+      <tr><td>Customer Detail — Overview</td><td>Company info, primary contact (editable: email, secondary email, phone), billing contact, customer needs context, checkout or signup link, internal notes.</td></tr>
+      <tr><td>Customer Detail — Plan &amp; Modules</td><td>Current plan name, price, billing frequency, next renewal date. Module access grid: unlocked vs locked.</td></tr>
+      <tr><td>Customer Detail — Payments</td><td>Dodo Customer ID, Dodo Subscription ID, subscription status, renewal date, grace end date. Resync from Dodo (live pull). Open Dodo customer portal.</td></tr>
+      <tr><td>Customer Detail — Admin Actions</td><td>Freeze / Unfreeze (reason required, logged). Update module access (reason required). Add internal note. Delete customer (requires typing company name).</td></tr>
+      <tr><td>Generate Checkout Link</td><td>Creates a Dodo customer (if new) and a checkout session. URL copied to clipboard. Status moves to payment pending.</td></tr>
+      <tr><td>Audit Log</td><td>Every account, plan, and module change with actor, old value, new value, reason, and timestamp.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="label-line">Customer</p>
+  <table>
+    <thead><tr><th>Feature</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Status-gated portal</td><td>Payment pending, trial expired, grace, and frozen each have tailored screens.</td></tr>
+      <tr><td>Active / trial access</td><td>Current plan, price, renewal date, and module access grid visible.</td></tr>
+      <tr><td>Grace period banner</td><td>Warning with grace end date; access retained; payment link shown.</td></tr>
+      <tr><td>I've Paid — Check Status</td><td>Customer triggers a live resync from Dodo. Portal unlocks immediately if payment confirmed.</td></tr>
+      <tr><td>Manage Billing</td><td>Opens Dodo customer portal for invoices, payment methods, and subscription history.</td></tr>
+      <tr><td>Request module access</td><td>Customer asks for a locked module with a short message. CS reviews and approves or rejects.</td></tr>
+      <tr><td>Post-payment redirect</td><td>After paying on Dodo checkout, customer is redirected to https://app.aiaccountant.com/</td></tr>
+    </tbody>
+  </table>
+
+  <p class="label-line">Automated — Dodo Payments webhooks</p>
+  <table>
+    <thead><tr><th>Dodo event</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>subscription.active</td><td>Status → active; activatedAt recorded; renewalDueDate set from Dodo next_billing_date</td></tr>
+      <tr><td>subscription.renewed</td><td>Status → active; renewalDueDate bumped forward</td></tr>
+      <tr><td>subscription.plan_changed</td><td>Treated as re-activation; status → active</td></tr>
+      <tr><td>subscription.on_hold</td><td>Status → grace; graceEndsAt set to +10 days</td></tr>
+      <tr><td>subscription.failed</td><td>Status → grace (if not already); graceEndsAt set to +7 days</td></tr>
+      <tr><td>subscription.cancelled</td><td>Status → inactive</td></tr>
+      <tr><td>subscription.expired</td><td>Status → frozen; frozenAt recorded</td></tr>
+      <tr><td>payment.succeeded</td><td>If in grace → status: active; graceEndsAt cleared</td></tr>
+      <tr><td>All events</td><td>Verified via Standard Webhooks signature. Deduplicated by webhook-id (last 1,000 IDs retained).</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── User Flows ── -->
+  <h1>User Flows</h1>
+
+  <hr/>
+  <h2>Growth / BD</h2>
+
+  <hr/>
+  <h3>Flow 1: Create Customer</h3>
+<pre class="flow">Growth opens Create Customer
+      │
+      ├── Fills Company, Primary User, Billing Contact, Ownership
+      ├── Enters Customer Needs (volume, accounting software, modules, start date)
+      │       └── Context only — not used for pricing
+      │
+      ├── Picks a plan from the catalogue
+      │       ├── Dropdown shows all active plans (name, price, frequency)
+      │       ├── Selected plan card shows price and included modules
+      │       └── If no suitable plan exists → Create Plan inline (drawer)
+      │               ├── Name, amount, billing frequency, modules
+      │               └── Save → Dodo product created live → plan appears in dropdown, auto-selected
+      │
+      ├── Chooses Activation mode
+      │       ├── Send payment link → status: draft
+      │       └── 14-day trial      → status: trial; signup invite generated
+      │
+      └── Submits
+             ├── Customer record saved with selected plan and modules
+             ├── If payment + plan has Dodo product:
+             │       ├── Dodo customer created (name, email, phone E.164)
+             │       ├── Dodo checkout session created → URL stored on customer
+             │       └── Status → payment_pending
+             ├── If trial → signup invite generated; status → trial
+             ├── Audit entries written
+             └── Growth sends link to customer (click-to-email or copy-paste)</pre>
+
+  <hr/>
+  <h3>Flow 2: Create a Plan (Packages)</h3>
+<pre class="flow">Growth / CS opens Packages → Add Plan
+      │
+      ├── Fills name, description, amount (₹), billing frequency, modules
+      │
+      └── Saves
+             ├── Plan saved to catalogue
+             ├── Dodo product created automatically (saas, recurring)
+             │       ├── Success → Dodo product ID written back to plan
+             │       └── Failure → plan saved locally; "Sync to Dodo" button shown in table
+             └── Audit entry written</pre>
+
+  <hr/>
+  <h2>Customer Success</h2>
+
+  <hr/>
+  <h3>Flow 3: Overview &amp; Attention</h3>
+<pre class="flow">CS opens Overview
+      │
+      ├── Stat cards: Active, Trial, Grace, Frozen, Payment Pending
+      └── Click any card → Customers list filtered to that status</pre>
+
+  <hr/>
+  <h3>Flow 4: Customer Detail</h3>
+<pre class="flow">CS opens Customer Detail
+      │
+      ├── Overview tab
+      │       ├── Company info, package name
+      │       ├── Primary Contact — Edit button → update email, secondary email, phone
+      │       ├── Billing Contact
+      │       ├── Customer Needs (volume, accounting software — from creation)
+      │       ├── Internal notes
+      │       └── Checkout or signup link (for draft / payment_pending / trial)
+      │               ├── Generate Checkout Link → Dodo session created; URL copied
+      │               └── Email Both → mailto with link pre-filled
+      │
+      ├── Plan &amp; Modules tab
+      │       ├── Current plan: name, price, frequency, next renewal date
+      │       └── Module access grid: unlocked vs locked
+      │
+      ├── Payments tab
+      │       ├── Dodo Customer ID, Dodo Subscription ID
+      │       ├── Renewal date, grace end date
+      │       ├── Resync from Dodo → live pull from Dodo; updates status immediately
+      │       └── Open Billing Portal → Dodo customer portal
+      │
+      └── Admin Actions tab
+              ├── Freeze → reason required → status: frozen; logged
+              ├── Unfreeze → reason required → status: active; logged
+              ├── Update Modules → checkbox grid + reason → modules updated; logged
+              ├── Add Note → internal note with timestamp and actor
+              └── Delete Customer → type company name to confirm → permanent</pre>
+
+  <hr/>
+  <h3>Flow 5: Generate Checkout for Existing Customer</h3>
+<pre class="flow">CS opens Customer Detail → Overview → Generate Checkout Link
+      │
+      ├── Plan must have a Dodo product ID
+      │       └── If not → error shown; CS goes to Packages to sync first
+      │
+      ├── If no Dodo customer yet → created now
+      │
+      ├── Dodo checkout session created
+      │       ├── URL copied to clipboard
+      │       ├── dodoCustomerId + checkoutUrl saved to customer record
+      │       └── Status → payment_pending
+      │
+      └── CS shares URL with customer</pre>
+
+  <hr/>
+  <h3>Flow 6: Plan Catalogue Management</h3>
+<pre class="flow">CS / Growth opens Packages
+      │
+      ├── Add Plan → drawer → Save → Dodo product created live (see Flow 2)
+      ├── Edit Plan → same drawer pre-filled (note: Dodo product price is immutable after creation)
+      ├── Toggle active → plan appears / disappears in Create Customer dropdown
+      ├── Sync to Dodo → manual retry if auto-sync failed at creation
+      └── Delete Plan
+            ├── If customers assigned → blocked; list of affected accounts shown
+            └── Else → confirm → deleted</pre>
+
+  <hr/>
+  <h2>End-user (AI Accountant Customer)</h2>
+
+  <hr/>
+  <h3>Flow 7: Activation</h3>
+<pre class="flow">Customer receives link from Growth / CS
+      │
+      ├── Payment link → Dodo-hosted checkout page
+      │       ├── Payment succeeds
+      │       │       ├── Dodo fires subscription.active webhook
+      │       │       │       └── Status → active; renewal date set
+      │       │       ├── Dodo sends payment confirmation email to customer
+      │       │       └── Customer redirected to https://app.aiaccountant.com/
+      │       └── Customer abandons → no change; URL remains valid
+      │
+      └── Signup invite (trial)
+              └── Opens product with modules unlocked for 14 days</pre>
+
+  <hr/>
+  <h3>Flow 8: Customer Portal</h3>
+<pre class="flow">Customer opens /portal/:customerId
+      │
+      ├── Page loads → fetches from server (billing.json) — server wins over local state
+      │       └── If payment_pending + Dodo customer linked → auto-resync from Dodo
+      │               └── If now active → portal unlocks immediately
+      │
+      ├── status: active or trial
+      │       ├── Current plan, price, frequency, renewal date
+      │       ├── Module access grid: unlocked vs locked
+      │       ├── Request Access on locked module → message → CS reviews
+      │       └── Manage Billing → Dodo customer portal
+      │
+      ├── status: grace
+      │       └── Warning banner with grace end date; full portal visible
+      │
+      ├── status: payment_pending
+      │       ├── Full-page gate: Complete Payment (opens checkout URL)
+      │       └── I've Paid — Check Status → resyncs from Dodo → unlocks if confirmed
+      │
+      ├── status: trial expired
+      │       └── Dashboard visible; all modules locked; directed to contact growth team
+      │
+      └── status: frozen or inactive
+              └── Full-page gate: Manage Billing + Contact CS</pre>
+
+  <hr/>
+  <h3>Flow 9: Renewal &amp; Grace (automated)</h3>
+<pre class="flow">Dodo charges on renewal date
+      │
+      ├── Payment succeeds
+      │       └── Dodo fires subscription.renewed
+      │               ├── renewalDueDate bumped forward
+      │               └── If was in grace → status: active
+      │
+      └── Payment fails
+              └── Dodo fires subscription.on_hold
+                    └── Status → grace; graceEndsAt → +10 days
+                          │
+                          ├── Payment received during grace
+                          │       └── Dodo fires payment.succeeded
+                          │               └── Status → active; graceEndsAt cleared
+                          │
+                          └── No payment by expiry
+                                  └── Dodo fires subscription.expired
+                                          └── Status → frozen; frozenAt set
+                                                  └── Portal collapses to frozen gate</pre>
+
+  <hr/>
+  <h3>Flow 10: Admin Login</h3>
+<pre class="flow">Team member opens admin portal
+      │
+      ├── Not authenticated → redirect to /auth/login
+      ├── Enters @karboncard.com email
+      │       └── Non-karboncard domain → rejected immediately
+      ├── OTP sent (10-minute TTL)
+      │       └── Dev mode: OTP shown as yellow badge on verify page
+      ├── Enters 6-digit code → verified → 8-hour session cookie set
+      └── Redirect to admin dashboard</pre>
+
+  <!-- ── User Stories ── -->
+  <h1>User Stories</h1>
+
+  <hr/>
+  <h2>Growth / BD</h2>
+
+  <p><strong>As Growth, I want one place to activate a customer so I do not coordinate across chat threads.</strong></p>
+  <ul>
+    <li>Opens Create Customer</li>
+    <li>Fills company, contacts, ownership, and customer needs (volume, software, modules, start date)</li>
+    <li>Picks a plan from the catalogue — or creates one on the spot, which syncs to Dodo immediately</li>
+    <li>Chooses Send payment link or 14-day trial</li>
+    <li>On submit: Dodo customer created, checkout or signup invite generated, audit log written</li>
+    <li>Sends the link to the customer via email or copy-paste into any channel</li>
+  </ul>
+
+  <p><strong>As Growth, I want to create a new plan without leaving the customer creation flow.</strong></p>
+  <ul>
+    <li>Clicks New Plan inside the Create Customer right panel</li>
+    <li>Drawer opens: fills name, amount, billing frequency, modules</li>
+    <li>Saves — Dodo product created live; plan appears in dropdown and is auto-selected</li>
+    <li>Continues creating the customer without interruption</li>
+  </ul>
+
+  <hr/>
+  <h2>Customer Success</h2>
+
+  <p><strong>As CS, I want to see what needs my attention without scrolling so I can pick the next account to work on.</strong></p>
+  <ul>
+    <li>Opens Overview</li>
+    <li>Sees stat cards: Active, Trial, Grace, Frozen, Payment Pending</li>
+    <li>Clicks any card: Customers list filtered to that status</li>
+  </ul>
+
+  <p><strong>As CS, I want to see everything about one customer in one screen.</strong></p>
+  <ul>
+    <li>Opens Customer Detail</li>
+    <li>Overview tab: company, primary contact (editable), customer needs context, checkout or signup link, internal notes</li>
+    <li>Plan &amp; Modules tab: current plan name, price, renewal date, module access grid</li>
+    <li>Payments tab: Dodo IDs, renewal date, Resync from Dodo, Open Billing Portal</li>
+    <li>Admin Actions tab: Freeze / Unfreeze, Update Modules, Add Note, Delete. Every action that changes data requires a typed reason and is logged.</li>
+  </ul>
+
+  <p><strong>As CS, I want to generate a checkout link for a customer who has not paid yet.</strong></p>
+  <ul>
+    <li>Opens Customer Detail → Overview tab</li>
+    <li>Clicks Generate Checkout Link</li>
+    <li>Dodo customer created (if new); checkout session created; URL copied to clipboard</li>
+    <li>Pastes or emails the link to the customer</li>
+  </ul>
+
+  <p><strong>As CS, I want to freeze an account for reasons that have nothing to do with payment.</strong></p>
+  <ul>
+    <li>Opens Customer Detail → Admin Actions</li>
+    <li>Clicks Freeze — types reason (compliance hold, fraud investigation, contractual dispute)</li>
+    <li>Account frozen; customer sees frozen gate; action logged with reason and timestamp</li>
+    <li>Unfreeze works the same way when resolved</li>
+  </ul>
+
+  <p><strong>As CS, I want to maintain the plan catalogue so it stays small and current.</strong></p>
+  <ul>
+    <li>Opens Packages</li>
+    <li>Adds, edits, activates, deactivates, or deletes plans</li>
+    <li>Adding a plan creates the Dodo product automatically</li>
+    <li>Delete is blocked when customers are still on that plan</li>
+  </ul>
+
+  <p><strong>As CS, I want a tamper-evident record of every change.</strong></p>
+  <ul>
+    <li>Opens Audit Log</li>
+    <li>Sees every status, module, plan, and note change with actor, old value, new value, reason, and timestamp</li>
+    <li>Dodo webhook events are also logged</li>
+  </ul>
+
+  <hr/>
+  <h2>End-user (AI Accountant Customer)</h2>
+
+  <p><strong>As a customer, I want to know what I am paying for, when it renews, and what I can use.</strong></p>
+  <ul>
+    <li>Opens their customer portal</li>
+    <li>Sees current plan, price, billing frequency, renewal date</li>
+    <li>Sees included modules and locked modules</li>
+    <li>Opens Dodo billing portal via Manage Billing for invoices and payment methods</li>
+  </ul>
+
+  <p><strong>As a customer, I want my portal to show the right status the moment I pay — without waiting for CS.</strong></p>
+  <ul>
+    <li>Pays on Dodo checkout; redirected to https://app.aiaccountant.com/</li>
+    <li>Opens portal — auto-resync from Dodo fires on load; status updates to active immediately</li>
+    <li>If resync hasn't triggered yet: clicks "I've Paid — Check Status" to force it</li>
+  </ul>
+
+  <p><strong>As a customer, I want to ask for access to a module I do not have without emailing.</strong></p>
+  <ul>
+    <li>Clicks Request Access on a locked module</li>
+    <li>Adds a short message; submits</li>
+    <li>CS reviews and approves or rejects with a reason</li>
+  </ul>
+
+  <p><strong>As a customer, I want clear instructions when something is wrong with my account.</strong></p>
+  <ul>
+    <li>If payment pending: full-page gate with Complete Payment button and "I've Paid — Check Status"</li>
+    <li>If trial expired: dashboard visible, modules locked, directed to contact the growth team</li>
+    <li>If grace: warning banner with grace end date; access retained</li>
+    <li>If frozen or inactive: full-page gate with Manage Billing and Contact CS</li>
+  </ul>
+
+  <hr/>
+  <h2>Automated — Dodo Payments</h2>
+  <p><strong>Dodo Payments notifies AIA whenever a subscription or payment event occurs, keeping status in sync without manual work.</strong></p>
+  <ul>
+    <li>Every incoming webhook is verified via Standard Webhooks signature</li>
+    <li>Every event is deduplicated — never processed twice</li>
+    <li>Payment succeeds → status: active; renewal date set; Dodo sends confirmation email to customer</li>
+    <li>Renewal paid → renewal date bumped forward</li>
+    <li>Payment fails → status: grace; 10-day window to pay</li>
+    <li>Payment received during grace → status: active; grace cleared</li>
+    <li>Grace expires without payment → status: frozen</li>
+    <li>Subscription cancelled → status: inactive</li>
+    <li>Plan changed in Dodo → status: active (re-activation)</li>
+  </ul>
+
+
+  <!-- ── What Happens When ── -->
+  <h1>What Happens When</h1>
+
+  <p class="label-line">What happens when a customer pays?</p>
+  <p>Dodo fires a <code>subscription.active</code> webhook. AIA sets the account to active, records activatedAt, and sets the renewal date from Dodo's next_billing_date. Dodo also sends a payment confirmation email to the customer automatically. The customer is redirected to https://app.aiaccountant.com/ after checkout completes.</p>
+
+  <p class="label-line">The customer just paid but the portal still shows Payment Required. What now?</p>
+  <p>The portal auto-resyncs from Dodo on every load when status is payment_pending and a Dodo customer ID is linked. If the webhook has already fired, the portal unlocks on the next page load. If not, the customer can click "I've Paid — Check Status" to force a live pull from Dodo. No CS action needed.</p>
+
+  <p class="label-line">What happens when a customer cancels during trial?</p>
+  <p>Dodo fires a <code>subscription.cancelled</code> webhook. The account moves to inactive. The customer can no longer access the product.</p>
+
+  <p class="label-line">Can a frozen or inactive customer come back?</p>
+  <p>Yes. If frozen by Dodo (grace expired): the customer pays, Dodo fires <code>payment.succeeded</code>, account moves to active automatically. If frozen manually by CS: CS unfreezes the account with a reason — status moves to active. If inactive: Growth generates a new checkout link; on payment, account activates again.</p>
+
+  <p class="label-line">What happens when a plan is changed mid-cycle?</p>
+  <p>Plan changes on active subscriptions are not handled in this version — changing the plan locally after checkout would diverge from what Dodo is billing. CS can update module access directly (Update Modules in Admin Actions) without touching the plan. A full plan change requires a new Dodo subscription.</p>
+
+  <p class="label-line">What happens if the plan has no Dodo product ID?</p>
+  <p>Checkout generation fails with a clear error: "Sync the plan to Dodo first." CS goes to Packages, clicks the "Sync to Dodo" button on the affected plan, then retries checkout. This only happens if the auto-sync failed when the plan was first saved.</p>
+
+  <p class="label-line">How does Growth know the first payment landed?</p>
+  <p>Dodo's webhook updates the account to active automatically. The customer moves from payment pending to active in the customer list. Growth can see this without any manual check. The audit log also records the webhook event.</p>
+
+  <p class="label-line">What happens when a phone number is invalid during checkout?</p>
+  <p>The system strips spaces and non-E.164 characters before sending to Dodo. If the result is not a valid E.164 number (must start with + followed by 10–15 digits), the phone field is silently omitted. Dodo does not require phone. Checkout proceeds.</p>
+
+  <p class="label-line">What happens when billing.json is empty (fresh deploy)?</p>
+  <p>The admin dashboard POSTs localStorage data to <code>/api/sync</code> on first mount. The server writes to billing.json only if it is empty. This seeds the server store with whatever the browser has — including demo data — so webhook handlers and the customer portal can find customers from that point on.</p>
+
+  <p class="label-line">What exactly is logged in the audit trail?</p>
+  <p>Every change to a customer, plan, or module assignment is recorded. Each entry shows who made the change (actor), what changed (old value and new value), why (the reason typed in), and when (timestamp). Dodo webhook events are also logged with the event type as the action.</p>
+
+  <p class="label-line">Do Growth and CS have different permissions?</p>
+  <p>Both have full access to the admin portal. The difference is who does what — not what they can see or do. Growth handles demos and first activation. CS handles everything after. Any @karboncard.com account can sign in and access all features.</p>
+
+  <p class="label-line">What is the OTP login flow in production vs development?</p>
+  <p>In development, the OTP is returned in the redirect URL and displayed as a yellow badge on the verify page. In production, an email service (e.g. Resend) must be wired into the <code>/api/auth/send-otp</code> route to deliver the code. The session TTL is 8 hours. OTPs expire in 10 minutes.</p>
+
+  <p class="label-line">How does the customer access the Dodo billing portal?</p>
+  <p>From their customer portal, the customer clicks Manage Billing. This calls <code>/api/dodo/customer-portal</code>, which creates a short-lived Dodo portal session and redirects the customer to it. The customer does not need a separate Dodo login — the session is generated server-side using their Dodo customer ID.</p>
+
+  <p class="label-line">What if a webhook fires for a customer not in billing.json?</p>
+  <p>The webhook handler tries to match by <code>metadata.customer_account_id</code> (set at checkout creation), then falls back to matching by <code>dodoCustomerId</code>. If neither matches, the event is logged but no state change is made. This only happens if the customer snapshot was not written to billing.json during checkout — which is covered by the customerSnapshot field sent at checkout creation.</p>
+
+  <p class="label-line">What happens when the same webhook arrives twice?</p>
+  <p>The webhook handler checks the <code>webhook-id</code> header against the last 1,000 processed IDs stored in <code>.data/webhook-events.json</code>. If the ID is found, the event is acknowledged (200 OK) but not processed again. This prevents double-status-changes from retry storms.</p>
+
+  <p class="label-line">What happens when a customer is deleted?</p>
+  <p>The customer record is permanently removed from localStorage and billing.json. This cannot be undone. The confirmation modal requires typing the exact company name. Any future Dodo webhooks for that customer will not find a matching record and will be silently ignored.</p>
+
+
+</main>
+</body>
+</html>

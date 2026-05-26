@@ -1,0 +1,51 @@
+"use client";
+
+import * as React from "react";
+import { AppShell } from "@/components/layout/AppShell";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { initializeDemoData } from "@/lib/billing";
+import type { AdminTab } from "@/components/layout/AppShell";
+
+export default function App() {
+  const [tab, setTab] = React.useState<AdminTab>("overview");
+  const [contextLabel, setContextLabel] = React.useState<string>();
+  const [navVersion, setNavVersion] = React.useState(0);
+  const [initialized, setInitialized] = React.useState(false);
+
+  React.useEffect(() => {
+    initializeDemoData();
+    setInitialized(true);
+    document.title = "AI Accountant Admin";
+  }, []);
+
+  if (!initialized) {
+    return (
+      <div className="h-screen bg-[#f3f4f6] flex items-center justify-center">
+        <svg
+          className="animate-pulse"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 32 32"
+          width={36}
+          height={36}
+          fill="black"
+        >
+          <path d="M29.68,23.34L21.08,4.79l-.18-.39c-1.01-2.23-2.6-3.35-4.22-3.39v10.54c.66,2.51,1.34,3.24,3.97,3.85.17.04.17.28,0,.32-2.63.62-3.37,1.39-3.97,3.82v7.27c2.37.04,4.7.74,6.79,2l1.43.86c.96.58,2.14.61,3.1.04,1.85-1.1,2.8-3.91,1.67-6.36Z" />
+          <path d="M16.27,19.54c-.62-2.53-1.34-3.21-3.97-3.82-.17-.04-.17-.28,0-.32,2.63-.62,3.35-1.29,3.97-3.82V1c-1.61.05-3.21,1.16-4.22,3.39l-.18.39L3.28,23.34c-1.14,2.45-.18,5.25,1.67,6.36.96.58,2.14.54,3.1-.04l1.43-.86c2.09-1.26,4.42-1.95,6.79-2v-7.27Z" />
+          <path fill="#fff" d="M20.65,15.39c-2.69-.64-3.38-1.35-4.01-4.08-.04-.17-.28-.17-.32,0-.63,2.73-1.32,3.44-4.01,4.08-.17.04-.17.29,0,.33,2.69.64,3.38,1.35,4.01,4.08.04.17.28.17.32,0,.63-2.73,1.32-3.44,4.01-4.08.17-.04.17-.29,0-.33Z" />
+          <polygon fill="#fff" points="16.69 26.81 16.27 26.81 16.26 1 16.7 1 16.69 26.81" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <AppShell
+      activeTab={tab}
+      onTabChange={(newTab) => { setTab(newTab); setContextLabel(undefined); setNavVersion(v => v + 1); }}
+      contextLabel={contextLabel}
+      onContextBack={() => { setContextLabel(undefined); setNavVersion(v => v + 1); }}
+    >
+      <AdminDashboard tab={tab} onTabChange={setTab} onContextLabelChange={setContextLabel} navVersion={navVersion} />
+    </AppShell>
+  );
+}
