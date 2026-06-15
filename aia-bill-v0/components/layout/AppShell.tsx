@@ -6,7 +6,6 @@ import {
   Users,
   ClipboardList,
   LayoutList,
-  LogOut,
   MoreVertical,
   PanelLeft,
   ChevronRight,
@@ -163,52 +162,14 @@ export function AppShell({ activeTab, onTabChange, contextLabel, onContextBack, 
 
 // ── User Widget (sidebar footer) ──────────────────────────────────────────
 function UserWidget({ collapsed }: { collapsed: boolean }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [open]);
-
   return (
-    <div ref={ref} className="relative p-2" style={{ borderTop: "1px solid #d0d1d3" }}>
-      {/* Popup menu — opens upward, centered */}
-      {open && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-[180px] bg-white rounded-[2.5px] overflow-hidden z-50"
-          style={{ border: "1px solid #d0d1d3" }}
-        >
-          <div className="px-3 py-2.5" style={{ borderBottom: "1px solid #e6e7ea" }}>
-            <p className="text-sm font-medium text-[#0a0a0a]">CS Team</p>
-            <p className="text-[11px] text-[#a3a3a3] mt-0.5">cs@karboncard.com</p>
-          </div>
-          <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              className="flex items-center gap-2 w-full px-3 py-2 text-xs bg-transparent cursor-pointer transition-colors duration-150 text-[#dc2626] hover:bg-[#fff5f5]"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign out
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* User button */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+    <div className="relative p-2" style={{ borderTop: "1px solid #d0d1d3" }}>
+      <div
         className={cn(
-          "flex w-full items-center gap-2 overflow-hidden rounded-[2.5px] p-2 transition-colors duration-150 hover:bg-[#f5f5f5] outline-none",
+          "flex w-full items-center gap-2 overflow-hidden rounded-[2.5px] p-2",
           collapsed ? "justify-center" : ""
         )}
         style={{ height: collapsed ? 36 : 48 }}
-        title={collapsed ? "CS Team" : undefined}
       >
         {/* Avatar */}
         <span
@@ -247,13 +208,9 @@ function UserWidget({ collapsed }: { collapsed: boolean }) {
                 cs@karboncard.com
               </span>
             </div>
-            <MoreVertical
-              className="ml-auto shrink-0 w-4 h-4 text-[#a3a3a3]"
-              strokeWidth={1.6}
-            />
           </>
         )}
-      </button>
+      </div>
     </div>
   );
 }

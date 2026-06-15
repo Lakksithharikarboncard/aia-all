@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { HelpCircle, LogOut } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 
 const LOGO_URL =
   "https://cdn.prod.website-files.com/67ed19ac5d8a1253defd2450/690089a8f61795ffd3233552_67f8c9f1c2388ba1fc177bcb_LOGO%20(NO%20BG)-01%201.svg";
@@ -39,15 +39,7 @@ export function TopNav() {
           </div>
           <span className="hidden sm:inline text-text-inverted/85">Karbon Card</span>
         </div>
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            title="Sign out"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-[2.5px] text-text-inverted/60 hover:text-text-inverted hover:bg-white/10 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </form>
+
       </div>
     </header>
   );
