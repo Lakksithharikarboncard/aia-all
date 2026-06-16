@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD — AIA Self-Serve Onboarding, Billing, Credits &amp; CPQ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --text: #0f0f0f;
+    --text2: #3c3c3c;
+    --muted: #6e6e6e;
+    --border: #e2e2e2;
+    --border-strong: #c6c6c6;
+    --bg: #ffffff;
+    --bg-soft: #f8f8f8;
+    --accent: #0f0f0f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { font-size: 15px; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 56px 40px 96px;
+  }
+
+  /* ── Header ──────────────────────────────── */
+  .doc-header {
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .doc-header .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .doc-header h1 {
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+  }
+  .doc-header .subtitle {
+    margin-top: 10px;
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.55;
+  }
+  .meta-row {
+    display: flex;
+    gap: 28px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .meta-item .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+  }
+  .meta-item .value {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 1px;
+  }
+
+  /* ── Sections ────────────────────────────── */
+  .section {
+    margin-top: 42px;
+  }
+  .section h2 {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .section h2 .sec-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+  }
+  .section h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 24px;
+    margin-bottom: 10px;
+  }
+  .section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    color: var(--text2);
+  }
+  .section p {
+    color: var(--text2);
+    margin-bottom: 10px;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .section ul {
+    margin: 6px 0 14px 18px;
+    color: var(--text2);
+  }
+  .section ul li {
+    margin-bottom: 3px;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .section ol {
+    margin: 6px 0 14px 18px;
+    color: var(--text2);
+  }
+  .section ol li {
+    margin-bottom: 3px;
+  }
+
+  /* ── Tables ──────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 12px 0 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--bg-soft);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    border-bottom: 1.5px solid var(--border-strong);
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text2);
+  }
+  tr:last-child td {
+    border-bottom: 1.5px solid var(--border-strong);
+  }
+
+  /* ── Note / Callout ──────────────────────── */
+  .note {
+    margin: 14px 0 18px;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text2);
+    text-align: justify;
+  }
+  .note strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Requirement ID ──────────────────────── */
+  .req-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg-soft);
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .req-table td:first-child {
+    width: 72px;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+  .req-table td:last-child {
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  /* ── Flow diagram ────────────────────────── */
+  .flow-wrap {
+    margin: 16px 0 20px;
+    padding: 18px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .flow-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Scope columns ───────────────────────── */
+  .scope-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 10px;
+  }
+  .scope-col h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .scope-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 13px;
+  }
+  .scope-col ul li {
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    hyphens: none;
+  }
+  .scope-col ul li:last-child {
+    border-bottom: none;
+  }
+  .scope-col.out ul li {
+    color: var(--muted);
+  }
+
+  /* ── Footer ──────────────────────────────── */
+  .doc-footer {
+    margin-top: 64px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-strong);
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+
+  @media (max-width: 600px) {
+    .page { padding: 32px 20px 64px; }
+    .doc-header h1 { font-size: 22px; }
+    .meta-row { flex-wrap: wrap; gap: 16px; }
+    .scope-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+
+  @media print {
+    .page { padding: 40px 0 80px; }
+    .section { break-inside: avoid; }
+    table { break-inside: avoid; }
+    .flow-wrap { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div class="kicker">Product Requirements Document · V1</div>
+    <h1>AIA Self-Serve Onboarding, Billing, Credits &amp; CPQ</h1>
+    <div class="subtitle">
+      AIA works, but users cannot adopt it without a sales call and manual setup. This release gives SMB founders, accountants, and finance teams a self-serve path to sign up, choose a plan, pay, start setup, and manage usage.
+    </div>
+    <div class="meta-row">
+      <div class="meta-item">
+        <div class="label">Product</div>
+        <div class="value">AI Accountant</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Area</div>
+        <div class="value">Onboarding → Billing</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Iteration</div>
+        <div class="value">V1</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Status</div>
+        <div class="value">Draft</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. PROBLEM -->
+  <div class="section">
+    <h2><span class="sec-num">01</span> Problem Statement</h2>
+    <p>AIA helps Indian businesses process financial documents across Accounts Payable, Accounts Receivable, Bank Statements, Dashboard insights, and GST Reconciliation. Users like the product, but adoption is blocked because users cannot sign up by themselves, cannot see pricing, cannot buy a plan, and cannot start processing without manual setup. Internal teams must handle onboarding, billing, and account setup manually.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>User experience</td><td>Users wait for sales or support before using AIA</td></tr>
+          <tr><td>Revenue</td><td>Interested SMBs cannot convert immediately</td></tr>
+          <tr><td>Operations</td><td>Growth and CS spend time on repetitive setup and billing work</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Target Users</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>User</th><th>Description</th><th>Key Need</th></tr></thead>
+        <tbody>
+          <tr><td>Founder / SMB Owner</td><td>Runs accounting informally in a 5–50 employee business</td><td>Fast setup, fair pricing, cost control</td></tr>
+          <tr><td>Accountant</td><td>External CA or in-house accountant</td><td>Bulk processing, Tally fit, audit clarity</td></tr>
+          <tr><td>Finance Manager</td><td>Finance operator at a growing SMB</td><td>Dashboard visibility, usage control</td></tr>
+          <tr><td>AIA Admin / CS</td><td>Internal support team</td><td>Billing visibility, credit adjustments, dispute handling</td></tr>
+          <tr><td>AIA Sales / Growth</td><td>Handles custom and assisted paths</td><td>CPQ leads, HubSpot context, faster handoff</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. APPROACH -->
+  <div class="section">
+    <h2><span class="sec-num">02</span> High-Level Approach</h2>
+    <p>Build a self-serve commercial flow around the company, not the individual user:</p>
+    <p style="text-align: center; margin: 12px 0; font-weight: 600; font-size: 14px; letter-spacing: 0.3px; color: var(--text2);">
+      Signup → Onboarding → Pricing → Checkout or Configure → Payment activation → Connect Tally / Zoho → Create or fetch company → Dashboard setup → Usage tracking → Billing management
+    </p>
+
+    <h3>Product Principles</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Principle</th><th>Decision</th></tr></thead>
+        <tbody>
+          <tr><td>Company owns billing</td><td>Usage, credits, revenue, invoices, and subscription attach to organization</td></tr>
+          <tr><td>Paid plans unlock AIA Core</td><td>Paid users get AP, AR, Statements, Dashboard, and Users &amp; Access</td></tr>
+          <tr><td>Trial is preview-only</td><td>Free users can explore but cannot process real documents</td></tr>
+          <tr><td>Billing must feel fair</td><td>Charge only for successful processing</td></tr>
+          <tr><td>Credits control usage</td><td>Plan credits reset monthly; top-up credits roll over</td></tr>
+          <tr><td>Webhooks are source of truth</td><td>Payment provider webhook activates subscription and grants credits</td></tr>
+          <tr><td>Admin actions must be auditable</td><td>Every credit, billing, and webhook action must have an event trail</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. PLANS -->
+  <div class="section">
+    <h2><span class="sec-num">03</span> Plans and Pricing</h2>
+
+    <h3>Standard Plans</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Plan</th><th>Price</th><th>Documents / Month</th><th>Bank Statements / Month</th><th>Path</th></tr></thead>
+        <tbody>
+          <tr><td>Free</td><td>₹0</td><td>0</td><td>0</td><td>Direct to dashboard preview</td></tr>
+          <tr><td>Starter</td><td>₹1,499/mo</td><td>350</td><td>5</td><td>→ Checkout</td></tr>
+          <tr><td>Growth</td><td>₹3,999/mo</td><td>800</td><td>20</td><td>→ Checkout</td></tr>
+          <tr><td>Custom</td><td>Usage-based</td><td>Any</td><td>Any</td><td>→ Configure → Checkout</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Discounts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Billing Period</th><th>Discount</th><th>Credit Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Monthly</td><td>None</td><td>Monthly allowance</td></tr>
+          <tr><td>Quarterly</td><td>15% off</td><td>Monthly allowance resets each month</td></tr>
+          <tr><td>Annual</td><td>25% off</td><td>Monthly allowance resets each month</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Add-ons</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Add-on</th><th>Price</th></tr></thead>
+        <tbody>
+          <tr><td>GST Reconciliation</td><td>₹999/mo</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Top-ups</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pack</th><th>Credits</th><th>Price</th><th>Eligibility</th></tr></thead>
+        <tbody>
+          <tr><td>Small</td><td>75</td><td>₹499</td><td>Active paid plans only</td></tr>
+          <tr><td>Medium</td><td>175</td><td>₹999</td><td>Active paid plans only</td></tr>
+          <tr><td>Large</td><td>400</td><td>₹1,999</td><td>Active paid plans only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Top-up credits roll over indefinitely.</p>
+  </div>
+
+  <!-- 4. CREDIT MODEL -->
+  <div class="section">
+    <h2><span class="sec-num">04</span> Credit and Usage Model</h2>
+    <p>A credit is the internal unit used to track successful AI processing. User-facing copy should say <em>documents</em> and <em>bank statements</em> where possible. The billing page may show credits for transparency.</p>
+
+    <h3>Credit Consumption</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>Credit Cost</th></tr></thead>
+        <tbody>
+          <tr><td>Bill / purchase invoice extraction</td><td>1 credit per successfully processed document</td></tr>
+          <tr><td>Sales invoice extraction</td><td>1 credit per successfully processed document</td></tr>
+          <tr><td>Bank statement parsing</td><td>10 credits per statement in V1</td></tr>
+          <tr><td>Dashboard viewing</td><td>0 credits</td></tr>
+          <tr><td>Failed processing</td><td>0 credits</td></tr>
+          <tr><td>Duplicate upload detected before processing</td><td>0 credits</td></tr>
+          <tr><td>GST reconciliation</td><td>Add-on access; not metered by credits in V1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <strong>Note.</strong> Use the simplified rule for V1: 1 bank statement = 10 credits. Do not charge separately by transaction count. Track transaction count internally for future pricing and analytics.
+    </div>
+
+    <h3>Consumption Order</h3>
+    <ol>
+      <li>Use plan credits first.</li>
+      <li>Use top-up credits second.</li>
+      <li>Block billable processing if both are insufficient.</li>
+    </ol>
+
+    <h3>Reset Behavior</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Credit Type</th><th>Reset / Expiry</th></tr></thead>
+        <tbody>
+          <tr><td>Plan credits</td><td>Refresh monthly on billing renewal</td></tr>
+          <tr><td>Used credits</td><td>Reset monthly</td></tr>
+          <tr><td>Top-up credits</td><td>Do not expire</td></tr>
+          <tr><td>Trial credits</td><td>Not applicable in V1 — trial has no processing credits</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. USER FLOWS -->
+  <div class="section">
+    <h2><span class="sec-num">05</span> User Flows</h2>
+
+    <h3>5.1 Standard Paid Plan</h3>
+    <div class="flow-wrap">
+      <div class="flow-caption">Figure 1. Standard Paid Plan Flow</div>
+      <pre class="mermaid">
+flowchart TD
+    A["/ — No auth token"] --> B["/signup"]
+    B --> C["Enter email or phone"]
+    C --> D["Verify OTP"]
+    D --> E["/onboarding"]
+    E --> F["Answer or skip questionnaire"]
+    F --> G["/pricing"]
+    G --> H["Select Starter or Growth"]
+    H --> I["/checkout"]
+    I --> J["Payment succeeds"]
+    J --> K["Connect Tally / Zoho"]
+    K --> L["Create or fetch company"]
+    L --> M["/dashboard/setup"]
+    M --> N["User starts processing"]
+
+
+
+      </pre>
+    </div>
+
+    <h3>5.2 Free Preview</h3>
+    <div class="flow-wrap">
+      <div class="flow-caption">Figure 2. Free Preview Flow</div>
+      <pre class="mermaid">
+flowchart TD
+    A["/signup"] --> B["Verify OTP"]
+    B --> C["/onboarding"]
+    C --> D["Skip or complete questionnaire"]
+    D --> E["/pricing"]
+    E --> F["Select Free"]
+    F --> G["Connect Tally / Zoho"]
+    G --> H["Create or fetch company"]
+    H --> I["/dashboard"]
+    I -.->|Cannot| J["Process documents<br/>Upload real files<br/>Connect Tally/Zoho<br/>Buy top-ups"]
+      </pre>
+    </div>
+
+    <h3>5.3 Custom Self-Serve (CPQ)</h3>
+    <div class="flow-wrap">
+      <div class="flow-caption">Figure 3. Custom Self-Serve Flow</div>
+      <pre class="mermaid">
+flowchart TD
+    A["/pricing"] --> B["Select Custom"]
+    B --> C["/configure"]
+    C --> D["Enter document &amp; statement volume"]
+    D --> E["Add GST Recon if needed"]
+    E --> F["See custom price"]
+    F --> G["Generate Invoice &amp; Pay"]
+    G --> H["/checkout<br/>customPrice &amp; customCredits"]
+    H --> I["Payment succeeds"]
+    I --> J["Connect Tally / Zoho"]
+    J --> K["Create or fetch company"]
+    K --> L["/dashboard/setup"]
+      </pre>
+    </div>
+
+    <h3>5.4 Custom Assisted</h3>
+    <div class="flow-wrap">
+      <div class="flow-caption">Figure 4. Custom Assisted Flow</div>
+      <pre class="mermaid">
+flowchart TD
+    A["/configure"] --> B["Enter workload"]
+    B --> C["Talk to Sales"]
+    C --> D["Proposal created"]
+    D --> E["HubSpot deal created or updated"]
+    E --> F["/configure/summary"]
+    F --> G["User submits sales call request"]
+    G --> H["Growth team receives context"]
+    H --> I["Sales closes deal"]
+    I --> J["Payment succeeds"]
+    J --> K["Connect Tally / Zoho"]
+    K --> L["Create or fetch company"]
+    L --> M["/dashboard/setup"]
+      </pre>
+    </div>
+
+    <h3>5.5 Top-up Purchase</h3>
+    <div class="flow-wrap">
+      <div class="flow-caption">Figure 5. Top-up Purchase Flow</div>
+      <pre class="mermaid">
+flowchart TD
+    A["Paid user reaches low balance or exhausted state"] --> B["Clicks Top Up"]
+    B --> C["Select top-up pack"]
+    C --> D["Checkout starts"]
+    D --> E["Payment succeeds"]
+    E --> F["Webhook grants top-up credits"]
+    F --> G["User continues processing"]
+      </pre>
+    </div>
+
+    <h3>5.6 Edge Cases</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Edge Case</th><th>Expected Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Invalid email or phone</td><td>Show inline error</td></tr>
+          <tr><td>Wrong OTP</td><td>Show error and allow retry</td></tr>
+          <tr><td>Too many OTP attempts</td><td>Lock verification temporarily, show countdown</td></tr>
+          <tr><td>User skips onboarding</td><td>Route to pricing without recommendation</td></tr>
+          <tr><td>Payment fails</td><td>Show failed page with retry and choose-plan options</td></tr>
+          <tr><td>Payment webhook repeats</td><td>Ignore duplicate event and log attempt</td></tr>
+          <tr><td>Payment succeeds but UI closes</td><td>Webhook still activates subscription</td></tr>
+          <tr><td>Subscription renewal fails</td><td>Start 7-day grace period</td></tr>
+          <tr><td>Grace period ends unpaid</td><td>Mark subscription as lapsed</td></tr>
+          <tr><td>Lapsed user opens dashboard</td><td>Allow read/navigation access</td></tr>
+          <tr><td>Lapsed user starts processing</td><td>Block action, show reactivation CTA</td></tr>
+          <tr><td>Credits fall to ≤20%</td><td>Show low-balance banner</td></tr>
+          <tr><td>Credits reach 0</td><td>Block billable actions</td></tr>
+          <tr><td>AI job fails</td><td>Deduct 0 credits</td></tr>
+          <tr><td>Batch partially succeeds</td><td>Deduct only for successful items</td></tr>
+          <tr><td>Duplicate upload detected</td><td>Deduct 0 credits</td></tr>
+          <tr><td>Invalid proposal ID</td><td>Show error, link back to /configure</td></tr>
+          <tr><td>Admin adjusts credits</td><td>Require reason and performer ID</td></tr>
+          <tr><td>GSTIN invalid at checkout</td><td>Show validation error only if GSTIN was entered</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6. JOB STORIES -->
+  <div class="section">
+    <h2><span class="sec-num">06</span> Job Stories</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>I want to</th><th>So that</th></tr></thead>
+        <tbody>
+          <tr><td>I discover AIA</td><td>sign up myself</td><td>I can try the product without waiting for sales</td></tr>
+          <tr><td>I create an account</td><td>the company to be created automatically</td><td>I can start setup quickly</td></tr>
+          <tr><td>I view pricing</td><td>see clear plans</td><td>I can choose without confusion</td></tr>
+          <tr><td>My usage is custom</td><td>configure my workload</td><td>I can get a fair price</td></tr>
+          <tr><td>I pay</td><td>access to activate automatically</td><td>I can start processing immediately</td></tr>
+          <tr><td>Processing fails</td><td>credits to stay untouched</td><td>I only pay for value</td></tr>
+          <tr><td>Credits are low</td><td>a warning</td><td>I can top up before work stops</td></tr>
+          <tr><td>Credits are exhausted</td><td>a clear recovery path</td><td>I can continue work</td></tr>
+          <tr><td>I need billing help</td><td>support to see my usage and invoices</td><td>issues get resolved quickly</td></tr>
+          <tr><td>I request sales help</td><td>the team to know my workload</td><td>I do not repeat myself</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 7. USER STORIES -->
+  <div class="section">
+    <h2><span class="sec-num">07</span> User Stories</h2>
+
+    <h3>Signup and Company</h3>
+    <ul>
+      <li>As a user, I want to sign up with email, so I can create an account.</li>
+      <li>As a user, I want to sign up with phone, so I can create an account.</li>
+      <li>As a user, I want to verify with OTP, so my account stays secure.</li>
+      <li>As a user, I want a company created during signup, so my billing and usage have one owner.</li>
+      <li>As an admin, I want usage tied to company, so I can support multi-user accounts.</li>
+    </ul>
+
+    <h3>Onboarding</h3>
+    <ul>
+      <li>As a user, I want to answer optional business questions, so AIA can guide my plan choice.</li>
+      <li>As a user, I want to skip onboarding, so I can see pricing immediately.</li>
+      <li>As a user, I want my onboarding answers saved, so I do not repeat them.</li>
+      <li>As a Growth user, I want onboarding data in HubSpot, so I can qualify leads faster.</li>
+    </ul>
+
+    <h3>Pricing</h3>
+    <ul>
+      <li>As a user, I want to compare Free, Starter, Growth, and Custom, so I can choose the right path.</li>
+      <li>As a user, I want to see documents and statements included, so I can understand plan limits.</li>
+      <li>As a user, I want to see GST Recon as an add-on, so I can choose it only if needed.</li>
+      <li>As a user, I want to see quarterly and annual discounts, so I can save on longer billing periods.</li>
+    </ul>
+
+    <h3>Checkout</h3>
+    <ul>
+      <li>As a user, I want to pay for Starter, so I can start processing documents.</li>
+      <li>As a user, I want to pay for Growth, so I can process higher volume.</li>
+      <li>As a user, I want to pay for a custom package, so I can match pricing to my workload.</li>
+      <li>As a user, I want GSTIN to be optional, so I can complete checkout even if I do not have it handy.</li>
+    </ul>
+
+    <h3>Credits and Processing</h3>
+    <ul>
+      <li>As a user, I want credits deducted only after success, so failed jobs do not cost me.</li>
+      <li>As a user, I want duplicate uploads to cost 0, so I am not charged for accidental repeats.</li>
+      <li>As a user, I want partial batch billing, so I only pay for successfully processed items.</li>
+      <li>As a user, I want low-credit warnings, so I can avoid interruption.</li>
+      <li>As a user, I want to buy top-ups, so I can continue work without changing plans.</li>
+    </ul>
+
+    <h3>Admin and Support</h3>
+    <ul>
+      <li>As an admin, I want to view customer billing state, so I can resolve support issues.</li>
+      <li>As an admin, I want immutable credit logs, so I can audit disputes.</li>
+      <li>As an admin, I want to manually adjust credits with a reason, so I can correct issues.</li>
+      <li>As Sales, I want CPQ leads in HubSpot, so I can follow up with full context.</li>
+    </ul>
+  </div>
+
+  <!-- 8. REQUIREMENTS -->
+  <div class="section">
+    <h2><span class="sec-num">08</span> Requirements</h2>
+
+    <h3>8.1 Signup and Company Creation</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">AUTH-1</span></td><td>The root page must redirect unauthenticated users to signup.</td></tr>
+          <tr><td><span class="req-id">AUTH-2</span></td><td>The signup page must support email signup.</td></tr>
+          <tr><td><span class="req-id">AUTH-3</span></td><td>The signup page must support phone signup.</td></tr>
+          <tr><td><span class="req-id">AUTH-4</span></td><td>The signup page must support login mode.</td></tr>
+          <tr><td><span class="req-id">AUTH-5</span></td><td>The system must send OTP after valid signup or login request.</td></tr>
+          <tr><td><span class="req-id">AUTH-6</span></td><td>The system must verify OTP before allowing product access.</td></tr>
+          <tr><td><span class="req-id">AUTH-7</span></td><td>The system must create one company during signup.</td></tr>
+          <tr><td><span class="req-id">AUTH-8</span></td><td>The company must become the billing entity.</td></tr>
+          <tr><td><span class="req-id">AUTH-9</span></td><td>The system must create a billing customer when the company is created.</td></tr>
+          <tr><td><span class="req-id">AUTH-10</span></td><td>The system must store the billing provider customer ID.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.2 Trial and Free Preview</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">TRIAL-1</span></td><td>Trial must start automatically after signup completion.</td></tr>
+          <tr><td><span class="req-id">TRIAL-2</span></td><td>Trial must last 14 calendar days.</td></tr>
+          <tr><td><span class="req-id">TRIAL-3</span></td><td>Trial must allow dashboard preview with sample data.</td></tr>
+          <tr><td><span class="req-id">TRIAL-4</span></td><td>Trial must allow pricing exploration.</td></tr>
+          <tr><td><span class="req-id">TRIAL-5</span></td><td>Trial must allow CPQ exploration.</td></tr>
+          <tr><td><span class="req-id">TRIAL-6</span></td><td>Trial must block paid AI processing.</td></tr>
+          <tr><td><span class="req-id">TRIAL-7</span></td><td>Trial must block real data ingestion from Tally or Zoho.</td></tr>
+          <tr><td><span class="req-id">TRIAL-8</span></td><td>Trial must block bulk uploads.</td></tr>
+          <tr><td><span class="req-id">TRIAL-9</span></td><td>Trial users must not buy top-ups.</td></tr>
+          <tr><td><span class="req-id">TRIAL-10</span></td><td>Free plan must have 0 documents and 0 statements.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.3 Onboarding Questionnaire</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">ONB-1</span></td><td>The onboarding questionnaire must be optional.</td></tr>
+          <tr><td><span class="req-id">ONB-2</span></td><td>The user must be able to skip onboarding.</td></tr>
+          <tr><td><span class="req-id">ONB-3</span></td><td>The questionnaire must capture company size.</td></tr>
+          <tr><td><span class="req-id">ONB-4</span></td><td>The questionnaire must capture business type.</td></tr>
+          <tr><td><span class="req-id">ONB-5</span></td><td>The questionnaire must capture pain points.</td></tr>
+          <tr><td><span class="req-id">ONB-6</span></td><td>The questionnaire must capture accounting software.</td></tr>
+          <tr><td><span class="req-id">ONB-7</span></td><td>The system must save onboarding state.</td></tr>
+          <tr><td><span class="req-id">ONB-8</span></td><td>The system must not re-ask completed onboarding questions.</td></tr>
+          <tr><td><span class="req-id">ONB-9</span></td><td>The user must be able to revisit onboarding later.</td></tr>
+          <tr><td><span class="req-id">ONB-10</span></td><td>Onboarding completion must route to pricing.</td></tr>
+          <tr><td><span class="req-id">ONB-11</span></td><td>Onboarding data must sync to HubSpot when available.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.4 Pricing</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">PRICE-1</span></td><td>Pricing page must show Free.</td></tr>
+          <tr><td><span class="req-id">PRICE-2</span></td><td>Pricing page must show Starter.</td></tr>
+          <tr><td><span class="req-id">PRICE-3</span></td><td>Pricing page must show Growth.</td></tr>
+          <tr><td><span class="req-id">PRICE-4</span></td><td>Pricing page must show Custom.</td></tr>
+          <tr><td><span class="req-id">PRICE-5</span></td><td>Free must show ₹0.</td></tr>
+          <tr><td><span class="req-id">PRICE-6</span></td><td>Starter must show ₹1,499/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-7</span></td><td>Starter must show 350 documents/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-8</span></td><td>Starter must show 5 bank statements/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-9</span></td><td>Growth must show ₹3,999/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-10</span></td><td>Growth must show 800 documents/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-11</span></td><td>Growth must show 20 bank statements/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-12</span></td><td>Custom must show usage-based pricing.</td></tr>
+          <tr><td><span class="req-id">PRICE-13</span></td><td>Quarterly billing must show 15% discount.</td></tr>
+          <tr><td><span class="req-id">PRICE-14</span></td><td>Annual billing must show 25% discount.</td></tr>
+          <tr><td><span class="req-id">PRICE-15</span></td><td>GST Reconciliation must show as optional add-on at ₹999/month.</td></tr>
+          <tr><td><span class="req-id">PRICE-16</span></td><td>Selecting Free must route to dashboard preview.</td></tr>
+          <tr><td><span class="req-id">PRICE-17</span></td><td>Selecting Starter must route to checkout.</td></tr>
+          <tr><td><span class="req-id">PRICE-18</span></td><td>Selecting Growth must route to checkout.</td></tr>
+          <tr><td><span class="req-id">PRICE-19</span></td><td>Selecting Custom must route to configure.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.5 Checkout</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">CHK-1</span></td><td>Checkout must support Starter.</td></tr>
+          <tr><td><span class="req-id">CHK-2</span></td><td>Checkout must support Growth.</td></tr>
+          <tr><td><span class="req-id">CHK-3</span></td><td>Checkout must support Custom Package.</td></tr>
+          <tr><td><span class="req-id">CHK-4</span></td><td>Checkout must show plan name or package name.</td></tr>
+          <tr><td><span class="req-id">CHK-5</span></td><td>Checkout must show billing period.</td></tr>
+          <tr><td><span class="req-id">CHK-6</span></td><td>Checkout must show included documents or credits.</td></tr>
+          <tr><td><span class="req-id">CHK-7</span></td><td>Checkout must show GST Recon add-on when selected.</td></tr>
+          <tr><td><span class="req-id">CHK-8</span></td><td>Checkout must collect contact name.</td></tr>
+          <tr><td><span class="req-id">CHK-9</span></td><td>Checkout must collect company name.</td></tr>
+          <tr><td><span class="req-id">CHK-10</span></td><td>Checkout must collect email.</td></tr>
+          <tr><td><span class="req-id">CHK-11</span></td><td>Checkout must allow optional GSTIN.</td></tr>
+          <tr><td><span class="req-id">CHK-12</span></td><td>Checkout must validate GSTIN only when entered.</td></tr>
+          <tr><td><span class="req-id">CHK-13</span></td><td>Checkout session must be created server-side.</td></tr>
+          <tr><td><span class="req-id">CHK-14</span></td><td>Checkout must use provider-agnostic billing abstraction.</td></tr>
+          <tr><td><span class="req-id">CHK-15</span></td><td>Checkout success page must not be the source of subscription activation.</td></tr>
+          <tr><td><span class="req-id">CHK-16</span></td><td>Payment webhook must be the source of subscription activation.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.6 Webhooks and Subscription Activation</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">WH-1</span></td><td>Webhook handler must verify provider signature.</td></tr>
+          <tr><td><span class="req-id">WH-2</span></td><td>Webhook handler must store processed event IDs.</td></tr>
+          <tr><td><span class="req-id">WH-3</span></td><td>Webhook handler must reject duplicate events safely.</td></tr>
+          <tr><td><span class="req-id">WH-4</span></td><td>Webhook handler must log every attempt.</td></tr>
+          <tr><td><span class="req-id">WH-5</span></td><td>Successful payment webhook must activate subscription.</td></tr>
+          <tr><td><span class="req-id">WH-6</span></td><td>Successful payment webhook must grant plan credits.</td></tr>
+          <tr><td><span class="req-id">WH-7</span></td><td>Successful top-up webhook must grant top-up credits.</td></tr>
+          <tr><td><span class="req-id">WH-8</span></td><td>Failed payment webhook must not grant credits.</td></tr>
+          <tr><td><span class="req-id">WH-9</span></td><td>Webhook logs must include event ID.</td></tr>
+          <tr><td><span class="req-id">WH-10</span></td><td>Webhook logs must include outcome.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.7 Subscription Lifecycle</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">SUB-1</span></td><td>Subscription must attach to company.</td></tr>
+          <tr><td><span class="req-id">SUB-2</span></td><td>Subscription must store plan.</td></tr>
+          <tr><td><span class="req-id">SUB-3</span></td><td>Subscription must store billing period.</td></tr>
+          <tr><td><span class="req-id">SUB-4</span></td><td>Subscription must store status.</td></tr>
+          <tr><td><span class="req-id">SUB-5</span></td><td>Subscription must store current period start.</td></tr>
+          <tr><td><span class="req-id">SUB-6</span></td><td>Subscription must store current period end.</td></tr>
+          <tr><td><span class="req-id">SUB-7</span></td><td>Subscription must store plan credits.</td></tr>
+          <tr><td><span class="req-id">SUB-8</span></td><td>Subscription must store used credits.</td></tr>
+          <tr><td><span class="req-id">SUB-9</span></td><td>Subscription must store top-up credits.</td></tr>
+          <tr><td><span class="req-id">SUB-10</span></td><td>Custom subscription must store isCustom.</td></tr>
+          <tr><td><span class="req-id">SUB-11</span></td><td>Custom subscription must store customPrice.</td></tr>
+          <tr><td><span class="req-id">SUB-12</span></td><td>Custom subscription must store customCredits.</td></tr>
+          <tr><td><span class="req-id">SUB-13</span></td><td>Failed renewal must start a 7-day grace period.</td></tr>
+          <tr><td><span class="req-id">SUB-14</span></td><td>Grace period expiry must set subscription to lapsed.</td></tr>
+          <tr><td><span class="req-id">SUB-15</span></td><td>Lapsed subscription must block billable processing.</td></tr>
+          <tr><td><span class="req-id">SUB-16</span></td><td>Lapsed subscription must allow read/navigation access.</td></tr>
+          <tr><td><span class="req-id">SUB-17</span></td><td>Downgrade with pending state is out of V1 scope.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.8 Credit Tracking</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">CRED-1</span></td><td>System must track credits at company level.</td></tr>
+          <tr><td><span class="req-id">CRED-2</span></td><td>System must deduct plan credits before top-up credits.</td></tr>
+          <tr><td><span class="req-id">CRED-3</span></td><td>System must deduct top-up credits after plan credits are exhausted.</td></tr>
+          <tr><td><span class="req-id">CRED-4</span></td><td>System must block billable actions when credits are insufficient.</td></tr>
+          <tr><td><span class="req-id">CRED-5</span></td><td>System must show low-balance warning at ≤20% monthly allowance.</td></tr>
+          <tr><td><span class="req-id">CRED-6</span></td><td>System must show exhausted-credit state at 0 available credits.</td></tr>
+          <tr><td><span class="req-id">CRED-7</span></td><td>Plan credits must refresh monthly.</td></tr>
+          <tr><td><span class="req-id">CRED-8</span></td><td>Used credits must reset monthly.</td></tr>
+          <tr><td><span class="req-id">CRED-9</span></td><td>Top-up credits must not expire.</td></tr>
+          <tr><td><span class="req-id">CRED-10</span></td><td>Monthly reset must create an audit event.</td></tr>
+          <tr><td><span class="req-id">CRED-11</span></td><td>Credit grant must create an audit event.</td></tr>
+          <tr><td><span class="req-id">CRED-12</span></td><td>Credit deduction must create an audit event.</td></tr>
+          <tr><td><span class="req-id">CRED-13</span></td><td>Manual adjustment must create an audit event.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.9 AI Processing and Deduction</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">AI-1</span></td><td>System must check available credits before billable processing.</td></tr>
+          <tr><td><span class="req-id">AI-2</span></td><td>System must deduct credits only after successful processing.</td></tr>
+          <tr><td><span class="req-id">AI-3</span></td><td>Failed processing must deduct 0 credits.</td></tr>
+          <tr><td><span class="req-id">AI-4</span></td><td>Retry after failed processing must deduct 0 credits unless retry succeeds.</td></tr>
+          <tr><td><span class="req-id">AI-5</span></td><td>Partial batch success must deduct only for successful items.</td></tr>
+          <tr><td><span class="req-id">AI-6</span></td><td>Duplicate upload detected before processing must deduct 0 credits.</td></tr>
+          <tr><td><span class="req-id">AI-7</span></td><td>Bill extraction must cost 1 credit per successful document.</td></tr>
+          <tr><td><span class="req-id">AI-8</span></td><td>Sales invoice extraction must cost 1 credit per successful document.</td></tr>
+          <tr><td><span class="req-id">AI-9</span></td><td>Bank statement parsing must cost 10 credits per successful statement in V1.</td></tr>
+          <tr><td><span class="req-id">AI-10</span></td><td>Dashboard viewing must cost 0 credits.</td></tr>
+          <tr><td><span class="req-id">AI-11</span></td><td>GST Reconciliation must be controlled by add-on entitlement in V1.</td></tr>
+          <tr><td><span class="req-id">AI-12</span></td><td>Processing event must reference source module.</td></tr>
+          <tr><td><span class="req-id">AI-13</span></td><td>Processing event must reference source object ID.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.10 CPQ / Custom Pricing</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">CPQ-1</span></td><td>Configure page must collect monthly bill volume.</td></tr>
+          <tr><td><span class="req-id">CPQ-2</span></td><td>Configure page must collect monthly sales invoice volume.</td></tr>
+          <tr><td><span class="req-id">CPQ-3</span></td><td>Configure page must collect monthly bank statement volume.</td></tr>
+          <tr><td><span class="req-id">CPQ-4</span></td><td>Configure page must allow GST Recon add-on selection.</td></tr>
+          <tr><td><span class="req-id">CPQ-5</span></td><td>Configure page must collect support preference.</td></tr>
+          <tr><td><span class="req-id">CPQ-6</span></td><td>Configure page must collect billing period.</td></tr>
+          <tr><td><span class="req-id">CPQ-7</span></td><td>CPQ must price documents at ₹5 per document.</td></tr>
+          <tr><td><span class="req-id">CPQ-8</span></td><td>CPQ must price bank statements at ₹50 per statement.</td></tr>
+          <tr><td><span class="req-id">CPQ-9</span></td><td>CPQ must price GST Recon add-on at ₹999/month.</td></tr>
+          <tr><td><span class="req-id">CPQ-10</span></td><td>CPQ must apply quarterly discount.</td></tr>
+          <tr><td><span class="req-id">CPQ-11</span></td><td>CPQ must apply annual discount.</td></tr>
+          <tr><td><span class="req-id">CPQ-12</span></td><td>CPQ custom credits must equal documents plus statements multiplied by 10.</td></tr>
+          <tr><td><span class="req-id">CPQ-13</span></td><td>CPQ must show price live.</td></tr>
+          <tr><td><span class="req-id">CPQ-14</span></td><td>CPQ must show monthly workload summary.</td></tr>
+          <tr><td><span class="req-id">CPQ-15</span></td><td>CPQ must support Generate Invoice and Pay.</td></tr>
+          <tr><td><span class="req-id">CPQ-16</span></td><td>CPQ must support Talk to Sales.</td></tr>
+          <tr><td><span class="req-id">CPQ-17</span></td><td>Generate Invoice and Pay must create checkout session.</td></tr>
+          <tr><td><span class="req-id">CPQ-18</span></td><td>Talk to Sales must create proposal or lead record.</td></tr>
+          <tr><td><span class="req-id">CPQ-19</span></td><td>Talk to Sales must sync lead context to HubSpot.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.11 Billing Management</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">BILL-1</span></td><td>Billing page must show active plan.</td></tr>
+          <tr><td><span class="req-id">BILL-2</span></td><td>Billing page must show billing period.</td></tr>
+          <tr><td><span class="req-id">BILL-3</span></td><td>Billing page must show remaining plan credits.</td></tr>
+          <tr><td><span class="req-id">BILL-4</span></td><td>Billing page must show top-up credits.</td></tr>
+          <tr><td><span class="req-id">BILL-5</span></td><td>Billing page must show used credits.</td></tr>
+          <tr><td><span class="req-id">BILL-6</span></td><td>Billing page must show low-balance state.</td></tr>
+          <tr><td><span class="req-id">BILL-7</span></td><td>Billing page must show exhausted-credit state.</td></tr>
+          <tr><td><span class="req-id">BILL-8</span></td><td>Billing page must show invoices.</td></tr>
+          <tr><td><span class="req-id">BILL-9</span></td><td>Billing page must link to provider invoice PDF when available.</td></tr>
+          <tr><td><span class="req-id">BILL-10</span></td><td>Billing page must show credit history.</td></tr>
+          <tr><td><span class="req-id">BILL-11</span></td><td>Billing page must show top-up purchase CTA for active paid plans.</td></tr>
+          <tr><td><span class="req-id">BILL-12</span></td><td>Billing page must hide top-up purchase CTA for Free users.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.12 Admin</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">ADM-1</span></td><td>Admin must see company billing overview.</td></tr>
+          <tr><td><span class="req-id">ADM-2</span></td><td>Admin must see active plan.</td></tr>
+          <tr><td><span class="req-id">ADM-3</span></td><td>Admin must see billing period.</td></tr>
+          <tr><td><span class="req-id">ADM-4</span></td><td>Admin must see credits remaining.</td></tr>
+          <tr><td><span class="req-id">ADM-5</span></td><td>Admin must see usage trend.</td></tr>
+          <tr><td><span class="req-id">ADM-6</span></td><td>Admin must see module access.</td></tr>
+          <tr><td><span class="req-id">ADM-7</span></td><td>Admin must see immutable credit logs.</td></tr>
+          <tr><td><span class="req-id">ADM-8</span></td><td>Admin must filter credit logs.</td></tr>
+          <tr><td><span class="req-id">ADM-9</span></td><td>Admin must see invoices list.</td></tr>
+          <tr><td><span class="req-id">ADM-10</span></td><td>Admin must see invoice status.</td></tr>
+          <tr><td><span class="req-id">ADM-11</span></td><td>Admin must open hosted invoice link when available.</td></tr>
+          <tr><td><span class="req-id">ADM-12</span></td><td>Admin must manually grant credits.</td></tr>
+          <tr><td><span class="req-id">ADM-13</span></td><td>Admin must manually debit credits.</td></tr>
+          <tr><td><span class="req-id">ADM-14</span></td><td>Manual adjustment must require reason.</td></tr>
+          <tr><td><span class="req-id">ADM-15</span></td><td>Manual adjustment must store performer ID.</td></tr>
+          <tr><td><span class="req-id">ADM-16</span></td><td>Admin must see webhook attempts.</td></tr>
+          <tr><td><span class="req-id">ADM-17</span></td><td>Admin must see webhook outcome.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.13 HubSpot CRM</h3>
+    <div class="table-wrap">
+      <table class="req-table">
+        <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><span class="req-id">CRM-1</span></td><td>System must create or update HubSpot contact on signup.</td></tr>
+          <tr><td><span class="req-id">CRM-2</span></td><td>System must create or update HubSpot company on company creation.</td></tr>
+          <tr><td><span class="req-id">CRM-3</span></td><td>System must sync onboarding answers to HubSpot.</td></tr>
+          <tr><td><span class="req-id">CRM-4</span></td><td>System must create or update deal when CPQ quote is generated.</td></tr>
+          <tr><td><span class="req-id">CRM-5</span></td><td>System must update deal when Talk to Sales is requested.</td></tr>
+          <tr><td><span class="req-id">CRM-6</span></td><td>System must update lifecycle stage after payment success.</td></tr>
+          <tr><td><span class="req-id">CRM-7</span></td><td>System must send low-balance signal to HubSpot.</td></tr>
+          <tr><td><span class="req-id">CRM-8</span></td><td>System must send credit exhaustion signal to HubSpot.</td></tr>
+          <tr><td><span class="req-id">CRM-9</span></td><td>System must send subscription lapsed signal to HubSpot.</td></tr>
+          <tr><td><span class="req-id">CRM-10</span></td><td>HubSpot sync failure must not block user flow.</td></tr>
+          <tr><td><span class="req-id">CRM-11</span></td><td>HubSpot sync failure must be logged.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 9. SCOPE -->
+  <div class="section">
+    <h2><span class="sec-num">09</span> Scope</h2>
+    <div class="scope-grid">
+      <div class="scope-col">
+        <h4>In Scope for V1</h4>
+        <ul>
+          <li>Email and phone signup</li>
+          <li>OTP verification</li>
+          <li>Company creation</li>
+          <li>Billing customer creation</li>
+          <li>14-day preview trial</li>
+          <li>Optional onboarding questionnaire</li>
+          <li>Pricing page</li>
+          <li>Starter checkout</li>
+          <li>Growth checkout</li>
+          <li>GST Recon add-on</li>
+          <li>Custom CPQ</li>
+          <li>Custom checkout</li>
+          <li>Webhook activation</li>
+          <li>Credit grants and deductions</li>
+          <li>Top-up purchase</li>
+          <li>Low-balance warnings</li>
+          <li>Exhaustion blocking</li>
+          <li>Monthly credit reset</li>
+          <li>Billing page</li>
+          <li>Admin billing overview</li>
+          <li>Admin credit logs</li>
+          <li>Admin invoice list</li>
+          <li>Manual credit adjustments</li>
+          <li>HubSpot sync</li>
+          <li>Audit logs</li>
+        </ul>
+      </div>
+      <div class="scope-col out">
+        <h4>Out of Scope for V1</h4>
+        <ul>
+          <li>Real-time credit reservation</li>
+          <li>Advanced dunning schedules beyond 7-day grace</li>
+          <li>Downgrade pending state</li>
+          <li>Custom invoice PDF generation outside billing provider</li>
+          <li>Enterprise procurement workflows</li>
+          <li>Multi-company billing under one parent account</li>
+          <li>Per-transaction bank statement pricing</li>
+          <li>Trial processing credits</li>
+          <li>Forced plan recommendations inside CPQ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. ACCEPTANCE -->
+  <div class="section">
+    <h2><span class="sec-num">10</span> Acceptance Criteria</h2>
+
+    <h3>Signup</h3>
+    <ul>
+      <li>User can sign up with email.</li>
+      <li>User can sign up with phone.</li>
+      <li>User can verify OTP.</li>
+      <li>System creates company after signup.</li>
+      <li>System creates billing customer after company creation.</li>
+    </ul>
+
+    <h3>Trial</h3>
+    <ul>
+      <li>Trial starts automatically.</li>
+      <li>Trial lasts 14 days.</li>
+      <li>Trial users can view dashboard preview.</li>
+      <li>Trial users cannot process documents.</li>
+      <li>Trial users cannot buy top-ups.</li>
+    </ul>
+
+    <h3>Pricing</h3>
+    <ul>
+      <li>Pricing page shows Free, Starter, Growth, and Custom.</li>
+      <li>Starter shows ₹1,499/month.</li>
+      <li>Starter shows 350 documents and 5 statements.</li>
+      <li>Growth shows ₹3,999/month.</li>
+      <li>Growth shows 800 documents and 20 statements.</li>
+      <li>GST Recon shows as ₹999/month add-on.</li>
+      <li>Custom routes to configure.</li>
+    </ul>
+
+    <h3>Checkout</h3>
+    <ul>
+      <li>Starter checkout works.</li>
+      <li>Growth checkout works.</li>
+      <li>Custom checkout works.</li>
+      <li>GSTIN is optional.</li>
+      <li>Payment success waits for webhook activation.</li>
+      <li>Payment failure shows recovery path.</li>
+    </ul>
+
+    <h3>Credits</h3>
+    <ul>
+      <li>Successful document processing deducts credits.</li>
+      <li>Failed processing deducts 0 credits.</li>
+      <li>Duplicate detected before processing deducts 0 credits.</li>
+      <li>Partial batch deducts only successful items.</li>
+      <li>Low balance shows at ≤20%.</li>
+      <li>Exhaustion blocks billable processing.</li>
+      <li>Top-ups work only for active paid plans.</li>
+      <li>Top-up credits roll over.</li>
+    </ul>
+
+    <h3>Admin</h3>
+    <ul>
+      <li>Admin can view billing overview.</li>
+      <li>Admin can view credit logs.</li>
+      <li>Admin can view invoices.</li>
+      <li>Admin can adjust credits with reason.</li>
+      <li>Admin can see webhook attempts.</li>
+    </ul>
+
+    <h3>HubSpot</h3>
+    <ul>
+      <li>Signup creates or updates contact.</li>
+      <li>Company creation creates or updates company.</li>
+      <li>CPQ creates or updates deal.</li>
+      <li>Talk to Sales updates deal.</li>
+      <li>HubSpot failure does not block user.</li>
+    </ul>
+  </div>
+
+  <!-- 11. ANALYTICS -->
+  <div class="section">
+    <h2><span class="sec-num">11</span> Analytics</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>signup_started</td><td>Track acquisition entry</td></tr>
+          <tr><td>signup_completed</td><td>Track auth conversion</td></tr>
+          <tr><td>company_created</td><td>Track commercial entity creation</td></tr>
+          <tr><td>onboarding_started</td><td>Track questionnaire entry</td></tr>
+          <tr><td>onboarding_completed</td><td>Track profile completion</td></tr>
+          <tr><td>onboarding_skipped</td><td>Track friction</td></tr>
+          <tr><td>pricing_viewed</td><td>Track pricing exposure</td></tr>
+          <tr><td>plan_selected</td><td>Track buying intent</td></tr>
+          <tr><td>cpq_started</td><td>Track custom interest</td></tr>
+          <tr><td>cpq_price_calculated</td><td>Track usage/pricing fit</td></tr>
+          <tr><td>cpq_invoice_generated</td><td>Track self-serve custom intent</td></tr>
+          <tr><td>talk_to_sales_requested</td><td>Track assisted demand</td></tr>
+          <tr><td>checkout_started</td><td>Track payment intent</td></tr>
+          <tr><td>checkout_succeeded</td><td>Track conversion</td></tr>
+          <tr><td>checkout_failed</td><td>Track payment friction</td></tr>
+          <tr><td>subscription_activated</td><td>Track paid activation</td></tr>
+          <tr><td>credits_granted</td><td>Track entitlement</td></tr>
+          <tr><td>document_processing_started</td><td>Track usage</td></tr>
+          <tr><td>document_processing_succeeded</td><td>Track value delivered</td></tr>
+          <tr><td>document_processing_failed</td><td>Track failure rate</td></tr>
+          <tr><td>credits_deducted</td><td>Track consumption</td></tr>
+          <tr><td>low_balance_shown</td><td>Track expansion risk</td></tr>
+          <tr><td>credits_exhausted</td><td>Track plan-fit issues</td></tr>
+          <tr><td>topup_purchased</td><td>Track expansion revenue</td></tr>
+          <tr><td>subscription_lapsed</td><td>Track churn risk</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    AI Accountant · Product Requirements Document · V1 · April 2026
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#ffffff',
+      primaryTextColor: '#0f0f0f',
+      primaryBorderColor: '#333333',
+      lineColor: '#333333',
+      secondaryColor: '#f7f7f7',
+      tertiaryColor: '#f0f0f0',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '12.5px',
+      nodeBorder: '#333333',
+      mainBkg: '#ffffff',
+      clusterBkg: '#f7f7f7'
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 10,
+      nodeSpacing: 28,
+      rankSpacing: 36
+    }
+  });
+</script>
+</body>
+</html>
