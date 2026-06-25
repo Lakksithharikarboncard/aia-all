@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
       leadEmail,
       leadPhone,
       orgName,
+      freeTrialEnabled,
+      trialDays,
     } = body;
 
     // ── Validate inputs ──────────────────────────────────────────────────
@@ -47,6 +49,21 @@ export async function POST(request: NextRequest) {
     // Helper to build signup URL (lead sees this first, then redirected to checkout)
     const buildSignupUrl = (checkoutUrl: string) =>
       `${baseUrl}/sign-up?checkout_url=${encodeURIComponent(checkoutUrl)}&plan=${encodeURIComponent(planLabel)}&price=${breakdown.finalPrice}&name=${encodeURIComponent(leadName)}&email=${encodeURIComponent(leadEmail)}`;
+
+    // Helper to build mailto URL for BD to send via their email client
+    const buildMailtoUrl = (signupUrl: string) => {
+      const subject = encodeURIComponent(`Your Korefi plan — ${planLabel}`);
+      const trialLine = parsedTrialDays > 0
+        ? `\n\nYou have a ${parsedTrialDays}-day free trial — no payment required to get started.`
+        : "";
+      const body = encodeURIComponent(
+        `Hi ${leadName},\n\nYour Korefi plan (${planLabel} — ₹${breakdown.finalPrice.toLocaleString("en-IN")}) is ready.${trialLine}\n\nSign up here: ${signupUrl}\n\nBest regards,\nKorefi Team`,
+      );
+      return `mailto:${encodeURIComponent(leadEmail)}?subject=${subject}&body=${body}`;
+    };
+
+    // ── Parse trial inputs ──────────────────────────────────────────────
+    const parsedTrialDays = freeTrialEnabled ? Math.max(0, Math.floor(Number(trialDays) || 0)) : 0;
 
     // ── Calculate price ──────────────────────────────────────────────────
     const breakdown = calculatePrice(pPlan, pCycle, Number(billsPerMonth), Number(banks));
@@ -94,6 +111,8 @@ export async function POST(request: NextRequest) {
         emailSent: emailResult.sent,
         emailError: emailResult.error || null,
         waLink,
+        mailtoUrl: buildMailtoUrl(signupUrl),
+        trialDays: parsedTrialDays,
         breakdown: {
           infraTotal: breakdown.infraTotal,
           billsTotal: breakdown.billsTotal,
@@ -130,6 +149,7 @@ export async function POST(request: NextRequest) {
         customerId: customer.customer_id,
         planCode: planCode(pPlan, pCycle),
         price: breakdown.finalPrice,
+        ...(parsedTrialDays > 0 ? { trialDays: parsedTrialDays } : {}),
       });
     } catch (e: any) {
       return NextResponse.json(
@@ -195,6 +215,8 @@ export async function POST(request: NextRequest) {
       emailSent: emailResult.sent,
       emailError: emailResult.error || null,
       waLink,
+      mailtoUrl: buildMailtoUrl(signupUrl),
+      trialDays: parsedTrialDays,
       breakdown: {
         infraTotal: breakdown.infraTotal,
         billsTotal: breakdown.billsTotal,

@@ -30,6 +30,9 @@ export default function CalculatorPage() {
   const [leadPhone, setLeadPhone] = React.useState("");
   const [orgName, setOrgName] = React.useState("");
 
+  const [freeTrialEnabled, setFreeTrialEnabled] = React.useState(false);
+  const [trialDays, setTrialDays] = React.useState(14);
+
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<{
     checkoutUrl: string;
@@ -44,6 +47,8 @@ export default function CalculatorPage() {
     emailSent: boolean;
     emailError: string | null;
     waLink: string | null;
+    mailtoUrl: string;
+    trialDays: number;
     mode?: string;
     breakdown: {
       infraTotal: number;
@@ -86,6 +91,8 @@ export default function CalculatorPage() {
           leadEmail: leadEmail.trim(),
           leadPhone: leadPhone.trim() || undefined,
           orgName: orgName.trim() || undefined,
+          freeTrialEnabled,
+          trialDays: freeTrialEnabled ? trialDays : 0,
         }),
       });
       clearTimeout(timeoutId);
@@ -115,6 +122,11 @@ export default function CalculatorPage() {
   const openWhatsApp = () => {
     if (!result?.waLink) return;
     window.open(result.waLink, "_blank");
+  };
+
+  const openMailto = () => {
+    if (!result?.mailtoUrl) return;
+    window.location.href = result.mailtoUrl;
   };
 
   const expiryTime = result
@@ -279,6 +291,45 @@ export default function CalculatorPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* Free trial */}
+          <div className="bg-white rounded-[2.5px] border border-[#e2e3e5] p-5">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider mb-4" style={{ color: "#0a0a0a" }}>
+              Free Trial
+            </h2>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={freeTrialEnabled}
+                onChange={(e) => setFreeTrialEnabled(e.target.checked)}
+                className="w-4 h-4 rounded-[2px] accent-[rgb(49,70,175)]"
+              />
+              <span className="text-sm font-medium" style={{ color: "#0a0a0a" }}>Enable free trial</span>
+            </label>
+            {freeTrialEnabled && (
+              <div className="mt-3">
+                <label className="text-xs font-medium" style={{ color: "#737373" }}>Trial duration (days)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={trialDays}
+                  onChange={(e) => setTrialDays(Math.max(1, Number(e.target.value)))}
+                  className="mt-1 w-full rounded-[2.5px] px-3 py-2 text-sm outline-none transition-colors"
+                  style={{
+                    border: "1px solid #d0d1d3",
+                    background: "#fafafa",
+                    color: "#0a0a0a",
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = PRIMARY; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#d0d1d3"; }}
+                />
+                <p className="text-[10px] mt-1.5" style={{ color: "#a3a3a3" }}>
+                  Customer gets full access for {trialDays} day{trialDays !== 1 ? "s" : ""} before billing starts
+                </p>
               </div>
             )}
           </div>
@@ -524,21 +575,37 @@ export default function CalculatorPage() {
                 </div>
               </div>
 
+              {/* Trial info */}
+              {result.trialDays > 0 && (
+                <div
+                  className="flex items-center gap-2 rounded-[2.5px] px-3 py-2 text-xs font-medium"
+                  style={{
+                    background: "rgba(49, 70, 175, 0.06)",
+                    border: "1px solid rgba(49, 70, 175, 0.2)",
+                    color: PRIMARY,
+                  }}
+                >
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  {result.trialDays}-day free trial enabled — billing starts after trial ends
+                </div>
+              )}
+
               {/* Share buttons */}
               <div className="flex gap-2 flex-wrap">
-                {result.emailSent !== false && (
-                  <div
-                    className="flex items-center gap-1.5 rounded-[2.5px] px-3 py-2 text-xs"
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e3e5",
-                      color: "#737373",
-                    }}
-                  >
-                    <Mail className="h-3.5 w-3.5" style={{ color: SUCCESS }} strokeWidth={1.8} />
-                    Email sent{result.emailError ? ` (${result.emailError})` : ""}
-                  </div>
-                )}
+                <button
+                  onClick={openMailto}
+                  className="flex items-center gap-1.5 rounded-[2.5px] px-3 py-2 text-xs font-medium transition-colors"
+                  style={{
+                    background: "rgba(49, 70, 175, 0.08)",
+                    border: "1px solid rgba(49, 70, 175, 0.25)",
+                    color: PRIMARY,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(49, 70, 175, 0.15)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(49, 70, 175, 0.08)"; }}
+                >
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  Send via Email
+                </button>
                 {result.waLink && (
                   <button
                     onClick={openWhatsApp}
@@ -621,6 +688,22 @@ export default function CalculatorPage() {
                 </div>
               </div>
             </div>
+
+            {/* Trial badge */}
+            {freeTrialEnabled && (
+              <div className="mt-4 pt-3 text-center" style={{ borderTop: "1px solid #edeef0" }}>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-[2.5px] px-2.5 py-1 text-xs font-medium"
+                  style={{
+                    background: "rgba(49, 70, 175, 0.06)",
+                    color: PRIMARY,
+                    border: "1px solid rgba(49, 70, 175, 0.15)",
+                  }}
+                >
+                  {trialDays}-day free trial
+                </span>
+              </div>
+            )}
 
             {/* Usage summary */}
             <div className="mt-5 pt-4" style={{ borderTop: "1px solid #edeef0" }}>

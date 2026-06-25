@@ -144,6 +144,7 @@ export interface CreateSubscriptionInput {
   planCode: string;
   price: number;
   quantity?: number;
+  trialDays?: number;
 }
 
 export interface CreateInvoiceHostedPageInput {
@@ -198,15 +199,17 @@ export async function createHostedPage(input: CreateHostedPageInput): Promise<Zo
 export async function createSubscription(input: CreateSubscriptionInput): Promise<{
   subscription: ZohoSubscription;
 }> {
-  const body = {
+  const hasTrial = input.trialDays && input.trialDays > 0;
+  const body: Record<string, unknown> = {
     customer_id: input.customerId,
     plan: {
       plan_code: input.planCode,
       price: input.price,
       quantity: input.quantity ?? 1,
+      ...(hasTrial ? { trial_days: input.trialDays } : {}),
     },
     auto_collect: false,
-    exclude_trial: true,
+    exclude_trial: !hasTrial,
   };
 
   const data = await zohoFetch("POST", "/subscriptions", body);

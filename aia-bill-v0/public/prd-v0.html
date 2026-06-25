@@ -177,7 +177,7 @@
   <p class="subtitle">AI Accountant · Billing and Access Control Module · Version 0</p>
   <div class="meta">
     <span><strong>Status:</strong> V0 Scope</span>
-    <span><strong>Updated:</strong> 16 June 2026</span>
+    <span><strong>Updated:</strong> 25 June 2026</span>
   </div>
 
   <h1>Problem Statement</h1>
@@ -207,12 +207,13 @@
     <li>Signup URL that takes the customer to a branded page, then to Zoho checkout</li>
     <li>Post-payment organisation creation via Zoho redirect callback</li>
     <li>Share links via mailto (email client) and wa.me (WhatsApp)</li>
+    <li>Optional free trial: checkbox to enable, number input for trial duration in days</li>
     <li>Admin dashboard with calculator launch, system status, quick-start guide</li>
   </ul>
   <p>Out of scope (V0):</p>
   <ul>
     <li>No self-serve signup or public pricing page</li>
-    <li>No trial periods or grace periods</li>
+    <li>No grace periods</li>
     <li>No per-module access control — all modules always on</li>
     <li>No automated email API — uses mailto (BD reviews and sends)</li>
     <li>No admin login/auth — portal is network-restricted</li>
@@ -227,6 +228,7 @@
     <thead><tr><th>Stage</th><th>What it means</th><th>Set by</th></tr></thead>
     <tbody>
       <tr><td>Subscription Created</td><td>Zoho customer + subscription created, plan assigned. Invoice payment hosted page generated. Lead has not yet paid.</td><td>BD: Create Customer &amp; Plan</td></tr>
+      <tr><td>In Trial</td><td>Free trial enabled. Customer has full product access for the configured number of days. No payment required until trial expires.</td><td>BD: Create Customer &amp; Plan (with free trial enabled)</td></tr>
       <tr><td>Payment Pending</td><td>Signup URL sent to lead. Lead has not yet opened or completed payment.</td><td>BD sends link</td></tr>
       <tr><td>Pending Payment</td><td>Lead opened signup page, redirected to Zoho checkout. Payment in progress.</td><td>Lead: clicks Continue</td></tr>
       <tr><td>Active</td><td>Payment confirmed. Zoho subscription is live. Organisation created. Product enabled.</td><td>Zoho redirect callback</td></tr>
@@ -274,6 +276,8 @@ Round the final price to the nearest rupee.
       <tr><td>Billing cycle</td><td>Quarterly / Annual</td></tr>
       <tr><td>Bills per month</td><td>number</td></tr>
       <tr><td>Number of banks (statements/month)</td><td>number</td></tr>
+      <tr><td>Enable free trial</td><td>checkbox (default: off)</td></tr>
+      <tr><td>Free trial days</td><td>number (visible only when free trial is enabled; e.g. 7, 14, 30)</td></tr>
     </tbody>
   </table>
 
@@ -294,6 +298,8 @@ Round the final price to the nearest rupee.
   ├── Slides: Bills/mo (0–1,500), Banks (1–10)
   │
   ├── Live price preview: infra + bills + banks → subtotal → final price
+  │
+  ├── Optional: ☑ Enable free trial → enters trial days (e.g. 7, 14, 30)
   │
   ├── Enters lead: name, email, phone, organisation
   │
@@ -366,7 +372,7 @@ Round the final price to the nearest rupee.
     <thead><tr><th>Call</th><th>Purpose</th><th>Key fields</th></tr></thead>
     <tbody>
       <tr><td><code>POST /customers</code></td><td>Create customer record</td><td><code>display_name</code>, <code>email</code>, <code>company_name</code>, <code>phone</code></td></tr>
-      <tr><td><code>POST /subscriptions</code></td><td>Create subscription with plan assigned immediately</td><td><code>customer_id</code>, <code>plan.plan_code</code>, <code>plan.price</code> (override), <code>auto_collect: false</code></td></tr>
+      <tr><td><code>POST /subscriptions</code></td><td>Create subscription with plan assigned immediately</td><td><code>customer_id</code>, <code>plan.plan_code</code>, <code>plan.price</code> (override), <code>auto_collect: false</code>, <code>plan.trial_days</code> (optional, sent only when free trial is enabled)</td></tr>
       <tr><td><code>POST /hostedpages/invoicepayment</code></td><td>Generate payment page for invoice</td><td><code>invoice_id</code>, <code>redirect_url</code></td></tr>
       <tr><td><code>GET /hostedpages/{id}</code></td><td>Verify payment success post-redirect</td><td>Check <code>status == "success"</code> and <code>data.subscription.status == "live"</code></td></tr>
     </tbody>
@@ -394,6 +400,9 @@ Round the final price to the nearest rupee.
 
   <p class="label-line">Why no automated email (Resend)?</p>
   <p>mailto gives BD control to personalise each message before sending. An automated email API can be added later if volume justifies it. WhatsApp via wa.me is always available.</p>
+
+  <p class="label-line">How does the free trial work?</p>
+  <p>When BD checks "Enable free trial" and enters a number of days, the subscription is created in Zoho with <code>plan.trial_days</code> set. During the trial period the customer has full product access with no payment required. When the trial expires, Zoho generates the first invoice and the normal billing cycle begins. If the customer does not pay after the trial, the subscription moves to Past Due as per the standard lifecycle.</p>
 
   <p class="label-line">Why no admin login?</p>
   <p>The portal is network-restricted (internal URL, not publicly advertised). Auth (OTP, domain-restricted) is deferred. The team accesses it directly.</p>
